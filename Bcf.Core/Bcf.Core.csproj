@@ -12,6 +12,10 @@
          и разрешать конфликт версий придётся тому, кто ставит оба компонента. -->
     <SignAssembly>false</SignAssembly>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- CA1720: свойство называется Guid, потому что так называется поле
+         в спецификации BCF. Переименование ради правила анализатора сделало бы
+         модель непохожей на стандарт, по которому её сверяют. -->
+    <NoWarn>$(NoWarn);CA1720</NoWarn>
   </PropertyGroup>
 
   <!-- Никаких PackageReference: каждая зависимость Bcf.Core удваивает риск

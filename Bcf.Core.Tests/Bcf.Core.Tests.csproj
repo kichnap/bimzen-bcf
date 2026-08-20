@@ -21,6 +21,13 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <!-- В net48 сборки работы с ZIP не подключаются автоматически, в отличие
+         от netstandard2.0. Именно так это выглядит и в плагине под Navisworks -->
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Bcf.Core\Bcf.Core.csproj" />
   </ItemGroup>

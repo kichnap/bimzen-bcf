@@ -173,7 +173,7 @@ namespace Bcf.Core.Vocabulary
 
         private static IReadOnlyList<string> Materialize(IEnumerable<string> values)
         {
-            if (values == null) return new string[0];
+            if (values == null) return Array.Empty<string>();
 
             var list = values as IReadOnlyList<string>;
             return list ?? new List<string>(values);

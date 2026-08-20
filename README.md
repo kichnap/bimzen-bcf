@@ -67,6 +67,9 @@ dotnet test Bcf.Core.Tests/Bcf.Core.Tests.csproj
 | Камера | `CameraConverter`, `Rotation`, `Vector3`, модели камер |
 | Идемпотентность | `StableTopicKey` — ключ, переживающий Reset теста, и выведенный из него GUID |
 | Формат чисел и дат | `BcfNumber` — единственное место, где числа становятся строками |
+| Модель BCF | `BcfTopic`, `BcfComment`, `BcfViewpoint`, `BcfComponent`, камеры — по спецификации, не по структуре архива |
+| Запись архива | `BcfArchiveWriter` (потоком, по одному топику) и две реализации: 3.0 и 2.1 |
+| Чтение архива | `BcfArchiveReader` — терпимый: чужие значения справочника сохраняются и попадают в отчёт |
 
 ## Генерация констант из справочника
 
