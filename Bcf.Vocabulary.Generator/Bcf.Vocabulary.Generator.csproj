@@ -7,6 +7,9 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Bcf.Vocabulary.Generator</RootNamespace>
     <IsPackable>false</IsPackable>
+    <!-- Советы использовать API, которых нет в net48: тот же файл компилируется
+         в тесты, собираемые в том числе под net48 -->
+    <NoWarn>$(NoWarn);CA1510;CA1865</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
