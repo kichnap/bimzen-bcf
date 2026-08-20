@@ -70,6 +70,8 @@ dotnet test Bcf.Core.Tests/Bcf.Core.Tests.csproj
 | Модель BCF | `BcfTopic`, `BcfComment`, `BcfViewpoint`, `BcfComponent`, камеры — по спецификации, не по структуре архива |
 | Запись архива | `BcfArchiveWriter` (потоком, по одному топику) и две реализации: 3.0 и 2.1 |
 | Чтение архива | `BcfArchiveReader` — терпимый: чужие значения справочника сохраняются и попадают в отчёт |
+| Порт к хосту | `IClashSource` — «дай тесты», «дай коллизии», «дай вид»; реализуется потребителем |
+| Экспорт | `BcfClashExporter` + `BcfExportSettings` — без окон, прогресс через `IProgress`, отмена токеном |
 
 ## Генерация констант из справочника
 
