@@ -23,4 +23,13 @@
     <ProjectReference Include="..\Bcf.Core\Bcf.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Генератор компилируется прямо в тесты: тест генерирует константы заново
+         и сверяет с закоммиченным файлом, поэтому расхождение справочника
+         и кода ловится тестом, а не в рантайме. Ссылкой на проект это сделать
+         нельзя — генератор собирается только под net8.0. -->
+    <Compile Include="..\Bcf.Vocabulary.Generator\VocabularyCodeGenerator.cs" Link="Generator\VocabularyCodeGenerator.cs" />
+    <Compile Include="..\Bcf.Vocabulary.Generator\RepositoryPaths.cs" Link="Generator\RepositoryPaths.cs" />
+  </ItemGroup>
+
 </Project>

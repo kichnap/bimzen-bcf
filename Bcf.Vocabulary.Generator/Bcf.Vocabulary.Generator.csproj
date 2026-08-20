@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Утилита времени разработки: в поставку не входит, поэтому зависимости
+         здесь свободны — в отличие от Bcf.Core. -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Bcf.Vocabulary.Generator</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Тот же парсер, что в тестах: файл VocabularyCodeGenerator.cs компилируется
+         и сюда, и в Bcf.Core.Tests, где проверяется расхождение кода со справочником. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>

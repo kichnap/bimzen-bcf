@@ -57,6 +57,26 @@ dotnet test Bcf.Core.Tests/Bcf.Core.Tests.csproj
 Тесты идут на двух целевых фреймворках: `net48` — как в Navisworks, `net8.0` — как
 у будущего агента.
 
+## Генерация констант из справочника
+
+Значения справочника попадают в код только через генератор — руками их не пишут:
+
+```
+dotnet run --project Bcf.Vocabulary.Generator            # перезаписать Bcf.Core/Vocabulary/BcfVocabulary.g.cs
+dotnet run --project Bcf.Vocabulary.Generator -- --check # проверить, что файл актуален
+```
+
+Забыть про перегенерацию нельзя: `VocabularyDriftTests` строит константы заново
+из `bcf-extensions.json` и сверяет с закоммиченным файлом, а
+`NoHardcodedVocabularyTests` следит, чтобы значений вроде `"In Progress"`
+не появилось строками в коде — ни здесь, ни в подключившем сабмодуль плагине.
+
+Файлы справочников для архива тоже собираются из констант, а не лежат готовыми:
+`ExtensionsWriter.Write30` даёт `extensions.xml` (BCF 3.0),
+`ExtensionsWriter.Write21` — `extensions.xsd` (BCF 2.1). Второй переопределяет
+типы `markup.xsd` через `redefine`, поэтому `markup.xsd` обязан лежать
+в архиве рядом с ним.
+
 ## Схемы
 
 XSD взяты из репозитория buildingSMART `BCF-XML` (ветки `release_3_0` и `release_2_1`)
