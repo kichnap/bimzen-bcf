@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Две цели намеренно: net48 — как в Navisworks, net8.0 — как у будущего
+         агента. Один и тот же netstandard2.0 обязан работать в обоих хостах. -->
+    <TargetFrameworks>net48;net8.0</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Bcf.Core.Tests</RootNamespace>
+    <!-- CA1707: имена тестов пишутся как Метод_Условие_Ожидание, подчёркивания здесь осмысленны -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+    <!-- Только в тестах: справочник разбирается заново и сверяется со
+         сгенерированными константами. В самой Bcf.Core JSON-парсера нет. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bcf.Core\Bcf.Core.csproj" />
+  </ItemGroup>
+
+</Project>

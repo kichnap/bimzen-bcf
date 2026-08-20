@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- netstandard2.0 грузится и в net48 (Navisworks), и в net8+ (агент, будущие
+         версии хоста). Ни одной ссылки на Autodesk.Navisworks.Api здесь быть не должно:
+         библиотека обязана собираться и тестироваться на машине без Navisworks. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Bcf.Core</RootNamespace>
+    <AssemblyName>Bcf.Core</AssemblyName>
+    <!-- Сборку намеренно НЕ подписываем строгим именем: рядом в одном процессе
+         Navisworks может оказаться вторая надстройка с этой же библиотекой,
+         и разрешать конфликт версий придётся тому, кто ставит оба компонента. -->
+    <SignAssembly>false</SignAssembly>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Никаких PackageReference: каждая зависимость Bcf.Core удваивает риск
+       конфликта сборок при двух надстройках в одном процессе Navisworks.
+       Всё, что нужно, есть в поверхности netstandard2.0. -->
+
+  <ItemGroup>
+    <!-- Справочник — единственный источник правды по значениям BCF.
+         Лежит рядом, в общей папке репозитория: его же читают генератор
+         констант, онлайн-сервис на Node и агент на C#. -->
+    <EmbeddedResource Include="..\bcf-vocabularies\bcf-extensions.json"
+                      Link="Resources\bcf-extensions.json"
+                      LogicalName="Bcf.Core.Resources.bcf-extensions.json" />
+
+    <!-- XSD buildingSMART: BCF-XML, ветки release_3_0 и release_2_1.
+         Кладём ресурсами, а не файлами рядом с DLL — сборка бандла плагина
+         вычищает из Contents все посторонние файлы. -->
+    <EmbeddedResource Include="..\schemas\3.0\*.xsd">
+      <Link>Schemas\3.0\%(Filename)%(Extension)</Link>
+      <LogicalName>Bcf.Core.Schemas.Bcf30.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\schemas\2.1\*.xsd" Exclude="..\schemas\2.1\extensions.reference.xsd">
+      <Link>Schemas\2.1\%(Filename)%(Extension)</Link>
+      <LogicalName>Bcf.Core.Schemas.Bcf21.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

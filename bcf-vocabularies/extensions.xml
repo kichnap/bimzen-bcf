@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  BCF 3.0 extensions.xml — генерируется из bcf-extensions.json, вручную не правится.
+  Раскладку элементов сверить с XSD из buildingSMART/BCF-XML, ветка release_3_0,
+  перед первым релизом: порядок и обязательность узлов задаются схемой.
+  Файл кладётся в корень .bcfzip рядом с bcf.version и project.bcfp.
+-->
+<Extensions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <TopicTypes>
+    <TopicType>Clash</TopicType>
+    <TopicType>Issue</TopicType>
+    <TopicType>Request</TopicType>
+    <TopicType>Question</TopicType>
+    <TopicType>Remark</TopicType>
+  </TopicTypes>
+
+  <TopicStatuses>
+    <TopicStatus>New</TopicStatus>
+    <TopicStatus>Assigned</TopicStatus>
+    <TopicStatus>In Progress</TopicStatus>
+    <TopicStatus>Resolved</TopicStatus>
+    <TopicStatus>Reopened</TopicStatus>
+    <TopicStatus>Closed</TopicStatus>
+    <TopicStatus>Rejected</TopicStatus>
+    <TopicStatus>Deferred</TopicStatus>
+  </TopicStatuses>
+
+  <Priorities>
+    <Priority>Critical</Priority>
+    <Priority>High</Priority>
+    <Priority>Normal</Priority>
+    <Priority>Low</Priority>
+  </Priorities>
+
+  <TopicLabels>
+    <TopicLabel>ARC</TopicLabel>
+    <TopicLabel>STR</TopicLabel>
+    <TopicLabel>HVAC</TopicLabel>
+    <TopicLabel>PLUMB</TopicLabel>
+    <TopicLabel>ELEC</TopicLabel>
+    <TopicLabel>FIRE</TopicLabel>
+    <TopicLabel>LV</TopicLabel>
+    <TopicLabel>PROCESS</TopicLabel>
+    <TopicLabel>SITE</TopicLabel>
+    <TopicLabel>Hard clash</TopicLabel>
+    <TopicLabel>Clearance</TopicLabel>
+    <TopicLabel>Maintenance</TopicLabel>
+    <TopicLabel>Duplicate</TopicLabel>
+    <TopicLabel>Modeling</TopicLabel>
+    <TopicLabel>Site</TopicLabel>
+    <TopicLabel>Auto</TopicLabel>
+  </TopicLabels>
+
+  <Stages>
+    <Stage>Concept</Stage>
+    <Stage>Design</Stage>
+    <Stage>Detailed Design</Stage>
+    <Stage>Construction</Stage>
+    <Stage>As-built</Stage>
+  </Stages>
+
+  <!--
+    Users заполняется на этапе экспорта: автор выгрузки + все встреченные AssignedTo.
+    Ниже — пример структуры, реальный список подставляет сериализатор.
+  -->
+  <Users>
+    <User>coordinator@example.com</User>
+  </Users>
+
+</Extensions>

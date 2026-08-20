@@ -1,0 +1,14 @@
+<!-- Свойства для всех проектов bimzen-bcf.
+     Файл нужен ещё и затем, чтобы репозиторий, подключённый сабмодулем,
+     не подхватывал Directory.Build.props потребителя: MSBuild поднимается
+     вверх по дереву до первого найденного файла и на этом останавливается. -->
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Company>BIMzen</Company>
+    <Product>Bcf.Core</Product>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,275 @@
+{
+  "$comment": "Единый источник правды для справочников BCF. Правится ТОЛЬКО здесь. Из этого файла генерируются: extensions.xml (файловый экспорт), TS-константы (сервер), C#-константы (плагин), ответ GET /projects/{id}/extensions (BCF-API).",
+  "vocabularyVersion": "1.0.0",
+  "bcfTargetVersion": "3.0",
+  "bcfFallbackVersion": "2.1",
+
+  "conventions": {
+    "wireValuesAreLiterals": "В BCF нет пары id/label. Значение поля TopicStatus/TopicType/Priority записывается в markup.bcf как есть и показывается пользователю в сторонних приложениях буквально. Поэтому wire-значения — английские ASCII.",
+    "localization": "Русские подписи применяются только в UI плагина и веб-сервиса, по таблице labels ниже. В файлы и в API они не попадают.",
+    "stability": "Wire-значения неизменяемы после первого релиза. Переименование = миграция данных на сервере. Добавлять новые можно, удалять — нет (только помечать deprecated).",
+    "caseSensitivity": "Сравнение wire-значений — строгое, с учётом регистра и пробелов."
+  },
+
+  "topicTypes": [
+    {
+      "value": "Clash",
+      "isDefault": true,
+      "labels": { "ru": "Коллизия", "en": "Clash" },
+      "description": {
+        "ru": "Пересечение элементов, выявленное автоматической проверкой. Тип по умолчанию для всего, что выгружено из Clash Detective.",
+        "en": "Geometric conflict detected by an automated clash test."
+      }
+    },
+    {
+      "value": "Issue",
+      "isDefault": false,
+      "labels": { "ru": "Замечание", "en": "Issue" },
+      "description": {
+        "ru": "Дефект или несоответствие, зафиксированное человеком при визуальной проверке модели.",
+        "en": "Defect or non-conformance raised manually during model review."
+      }
+    },
+    {
+      "value": "Request",
+      "isDefault": false,
+      "labels": { "ru": "Запрос изменения", "en": "Request" },
+      "description": {
+        "ru": "Требование внести изменение в модель смежной дисциплины. Предполагает конкретного адресата и срок.",
+        "en": "Request for a change in another discipline's model."
+      }
+    },
+    {
+      "value": "Question",
+      "isDefault": false,
+      "labels": { "ru": "Вопрос", "en": "Question" },
+      "description": {
+        "ru": "Запрос разъяснения. Не является дефектом, закрывается ответом, а не правкой модели.",
+        "en": "Request for clarification; resolved by an answer, not a model change."
+      }
+    },
+    {
+      "value": "Remark",
+      "isDefault": false,
+      "labels": { "ru": "Информация", "en": "Remark" },
+      "description": {
+        "ru": "Информационная пометка, не требующая действий. Используется для фиксации согласованных отступлений.",
+        "en": "Informational note requiring no action."
+      }
+    }
+  ],
+
+  "topicStatuses": [
+    {
+      "value": "New",
+      "isDefault": true,
+      "category": "open",
+      "isTerminal": false,
+      "color": "#6B7280",
+      "labels": { "ru": "Новое", "en": "New" },
+      "description": {
+        "ru": "Создано выгрузкой или вручную, ещё не разобрано координатором. Исполнитель не назначен.",
+        "en": "Created, not yet triaged. No assignee."
+      },
+      "allowedTransitions": ["Assigned", "Rejected", "Deferred", "Closed"]
+    },
+    {
+      "value": "Assigned",
+      "isDefault": false,
+      "category": "open",
+      "isTerminal": false,
+      "color": "#2563EB",
+      "labels": { "ru": "Назначено", "en": "Assigned" },
+      "description": {
+        "ru": "Разобрано, назначен исполнитель, работа ещё не начата. Требует заполненного AssignedTo.",
+        "en": "Triaged and assigned; work not started. Requires AssignedTo."
+      },
+      "requiresAssignee": true,
+      "allowedTransitions": ["In Progress", "Rejected", "Deferred", "New"]
+    },
+    {
+      "value": "In Progress",
+      "isDefault": false,
+      "category": "open",
+      "isTerminal": false,
+      "color": "#D97706",
+      "labels": { "ru": "В работе", "en": "In Progress" },
+      "description": {
+        "ru": "Исполнитель приступил к устранению.",
+        "en": "Assignee is actively working on it."
+      },
+      "requiresAssignee": true,
+      "allowedTransitions": ["Resolved", "Deferred", "Assigned"]
+    },
+    {
+      "value": "Resolved",
+      "isDefault": false,
+      "category": "open",
+      "isTerminal": false,
+      "color": "#7C3AED",
+      "labels": { "ru": "Устранено", "en": "Resolved" },
+      "description": {
+        "ru": "Исполнитель заявил об устранении. Ожидает проверки координатором на следующей выгрузке модели. НЕ конечный статус.",
+        "en": "Assignee reports a fix; awaiting coordinator verification. Not terminal."
+      },
+      "allowedTransitions": ["Closed", "Reopened"]
+    },
+    {
+      "value": "Reopened",
+      "isDefault": false,
+      "category": "open",
+      "isTerminal": false,
+      "color": "#DC2626",
+      "labels": { "ru": "Переоткрыто", "en": "Reopened" },
+      "description": {
+        "ru": "Проверка показала, что коллизия сохраняется. Отдельный статус нужен для метрики повторных возвратов.",
+        "en": "Verification failed; issue persists. Kept separate for rework metrics."
+      },
+      "allowedTransitions": ["Assigned", "In Progress", "Rejected", "Deferred"]
+    },
+    {
+      "value": "Closed",
+      "isDefault": false,
+      "category": "closed",
+      "isTerminal": true,
+      "color": "#16A34A",
+      "labels": { "ru": "Закрыто", "en": "Closed" },
+      "description": {
+        "ru": "Координатор подтвердил устранение. Конечный статус.",
+        "en": "Coordinator verified the fix. Terminal."
+      },
+      "allowedTransitions": ["Reopened"]
+    },
+    {
+      "value": "Rejected",
+      "isDefault": false,
+      "category": "closed",
+      "isTerminal": true,
+      "color": "#78716C",
+      "labels": { "ru": "Отклонено", "en": "Rejected" },
+      "description": {
+        "ru": "Не является дефектом: ложное срабатывание, дубликат, допустимое пересечение. Требует обязательного комментария с обоснованием.",
+        "en": "Not a defect: false positive, duplicate, or acceptable overlap. Comment required."
+      },
+      "requiresComment": true,
+      "allowedTransitions": ["Reopened"]
+    },
+    {
+      "value": "Deferred",
+      "isDefault": false,
+      "category": "open",
+      "isTerminal": false,
+      "color": "#0891B2",
+      "labels": { "ru": "Отложено", "en": "Deferred" },
+      "description": {
+        "ru": "Решение осознанно отложено до следующей стадии или до внешнего условия. Требует комментария с указанием условия возврата.",
+        "en": "Deliberately postponed to a later stage or pending an external condition. Comment required."
+      },
+      "requiresComment": true,
+      "allowedTransitions": ["Assigned", "In Progress", "Rejected", "Closed"]
+    }
+  ],
+
+  "priorities": [
+    {
+      "value": "Critical",
+      "isDefault": false,
+      "rank": 1,
+      "color": "#DC2626",
+      "labels": { "ru": "Критичный", "en": "Critical" },
+      "description": {
+        "ru": "Блокирует выпуск документации или работы на площадке. Требует решения в текущем цикле координации.",
+        "en": "Blocks document release or site work."
+      }
+    },
+    {
+      "value": "High",
+      "isDefault": false,
+      "rank": 2,
+      "color": "#EA580C",
+      "labels": { "ru": "Высокий", "en": "High" },
+      "description": {
+        "ru": "Жёсткое пересечение несущих или магистральных элементов, перепроектирование неизбежно.",
+        "en": "Hard clash on structural or main-route elements; redesign required."
+      }
+    },
+    {
+      "value": "Normal",
+      "isDefault": true,
+      "rank": 3,
+      "color": "#2563EB",
+      "labels": { "ru": "Обычный", "en": "Normal" },
+      "description": {
+        "ru": "Значение по умолчанию для автоматически выгруженных коллизий.",
+        "en": "Default for automatically exported clashes."
+      }
+    },
+    {
+      "value": "Low",
+      "isDefault": false,
+      "rank": 4,
+      "color": "#64748B",
+      "labels": { "ru": "Низкий", "en": "Low" },
+      "description": {
+        "ru": "Устраняется попутно, срок не критичен.",
+        "en": "Fix opportunistically; no hard deadline."
+      }
+    }
+  ],
+
+  "topicLabels": [
+    { "value": "ARC",       "group": "discipline", "labels": { "ru": "АР — архитектурные решения", "en": "Architecture" } },
+    { "value": "STR",       "group": "discipline", "labels": { "ru": "КР — конструктивные решения", "en": "Structure" } },
+    { "value": "HVAC",      "group": "discipline", "labels": { "ru": "ОВ — отопление и вентиляция", "en": "HVAC" } },
+    { "value": "PLUMB",     "group": "discipline", "labels": { "ru": "ВК — водоснабжение и канализация", "en": "Plumbing" } },
+    { "value": "ELEC",      "group": "discipline", "labels": { "ru": "ЭОМ — электроснабжение", "en": "Electrical" } },
+    { "value": "FIRE",      "group": "discipline", "labels": { "ru": "ПТ — пожаротушение и ДУ", "en": "Fire protection" } },
+    { "value": "LV",        "group": "discipline", "labels": { "ru": "СС — слаботочные системы", "en": "Low voltage" } },
+    { "value": "PROCESS",   "group": "discipline", "labels": { "ru": "ТХ — технологические решения", "en": "Process" } },
+    { "value": "SITE",      "group": "discipline", "labels": { "ru": "ГП — генеральный план", "en": "Site" } },
+
+    { "value": "Hard clash",  "group": "nature", "labels": { "ru": "Жёсткая коллизия", "en": "Hard clash" } },
+    { "value": "Clearance",   "group": "nature", "labels": { "ru": "Нарушение зазора", "en": "Clearance" } },
+    { "value": "Maintenance", "group": "nature", "labels": { "ru": "Зона обслуживания", "en": "Maintenance access" } },
+    { "value": "Duplicate",   "group": "nature", "labels": { "ru": "Дубликат", "en": "Duplicate" } },
+    { "value": "Modeling",    "group": "nature", "labels": { "ru": "Ошибка моделирования", "en": "Modeling error" } },
+
+    { "value": "Site",        "group": "source", "labels": { "ru": "Выявлено на площадке", "en": "Found on site" } },
+    { "value": "Auto",        "group": "source", "labels": { "ru": "Автопроверка", "en": "Automated check" } }
+  ],
+
+  "stages": [
+    { "value": "Concept",         "isDefault": false, "rank": 1, "labels": { "ru": "ЭП — эскизный проект", "en": "Concept" } },
+    { "value": "Design",          "isDefault": true,  "rank": 2, "labels": { "ru": "П — проектная документация", "en": "Design" } },
+    { "value": "Detailed Design", "isDefault": false, "rank": 3, "labels": { "ru": "Р — рабочая документация", "en": "Detailed design" } },
+    { "value": "Construction",    "isDefault": false, "rank": 4, "labels": { "ru": "СМР — строительство", "en": "Construction" } },
+    { "value": "As-built",        "isDefault": false, "rank": 5, "labels": { "ru": "ИД — исполнительная документация", "en": "As-built" } }
+  ],
+
+  "users": {
+    "$comment": "В файловом экспорте список формируется из фактически встреченных значений AssignedTo плюс автор выгрузки. В BCF-API список отдаёт сервер по составу участников проекта. Идентификатор пользователя — email в нижнем регистре.",
+    "identifierFormat": "email",
+    "seed": []
+  },
+
+  "navisworksStatusMapping": {
+    "$comment": "Clash Detective → BCF. Значения слева — ClashStatus из Navisworks API. Пользователь может переопределить в диалоге экспорта; здесь заданы дефолты.",
+    "New": "New",
+    "Active": "Assigned",
+    "Reviewed": "In Progress",
+    "Approved": "Closed",
+    "Resolved": "Resolved"
+  },
+
+  "bcfStatusToNavisworksMapping": {
+    "$comment": "Обратное отображение при подтягивании статусов с сервера в Clash Detective. Набор статусов Navisworks беднее, поэтому отображение не биективно — часть информации теряется, полный статус остаётся в панели плагина.",
+    "New": "New",
+    "Assigned": "Active",
+    "In Progress": "Active",
+    "Resolved": "Resolved",
+    "Reopened": "Active",
+    "Closed": "Approved",
+    "Rejected": "Approved",
+    "Deferred": "Reviewed"
+  }
+}
