@@ -10,6 +10,12 @@ namespace Bcf.Vocabulary.Generator
     /// </summary>
     public static class RepositoryPaths
     {
+        /// <summary>Относительный путь к справочнику от корня репозитория.</summary>
+        public const string VocabularyRelativePath = "bcf-vocabularies/bcf-extensions.json";
+
+        /// <summary>Относительный путь к генерируемому файлу констант.</summary>
+        public const string OutputRelativePath = "Bcf.Core/Vocabulary/BcfVocabulary.g.cs";
+
         /// <summary>
         /// Поднимается от <paramref name="startDirectory"/> вверх, пока не найдёт
         /// справочник — он и помечает корень репозитория.
@@ -21,7 +27,7 @@ namespace Bcf.Vocabulary.Generator
             while (directory != null)
             {
                 string marker = Path.Combine(directory.FullName,
-                    VocabularyCodeGenerator.VocabularyRelativePath.Replace('/', Path.DirectorySeparatorChar));
+                    VocabularyRelativePath.Replace('/', Path.DirectorySeparatorChar));
 
                 if (File.Exists(marker)) return directory.FullName;
 
@@ -30,19 +36,19 @@ namespace Bcf.Vocabulary.Generator
 
             throw new InvalidOperationException(
                 "Не найден корень репозитория bimzen-bcf: поиск шёл вверх от '" + startDirectory +
-                "' и не встретил " + VocabularyCodeGenerator.VocabularyRelativePath + ".");
+                "' и не встретил " + VocabularyRelativePath + ".");
         }
 
         public static string VocabularyFile(string repositoryRoot)
         {
             return Path.Combine(repositoryRoot,
-                VocabularyCodeGenerator.VocabularyRelativePath.Replace('/', Path.DirectorySeparatorChar));
+                VocabularyRelativePath.Replace('/', Path.DirectorySeparatorChar));
         }
 
         public static string GeneratedFile(string repositoryRoot)
         {
             return Path.Combine(repositoryRoot,
-                VocabularyCodeGenerator.OutputRelativePath.Replace('/', Path.DirectorySeparatorChar));
+                OutputRelativePath.Replace('/', Path.DirectorySeparatorChar));
         }
 
         /// <summary>

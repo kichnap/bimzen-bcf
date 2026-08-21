@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Утилита времени разработки: в поставку не входит, зависимости свободны -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Bcf.TestData.Generator</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CA1303;CA1305;CA1859</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bcf.Core\Bcf.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Поиск корня репозитория общий с генератором справочника -->
+    <Compile Include="..\Bcf.Vocabulary.Generator\RepositoryPaths.cs" Link="RepositoryPaths.cs" />
+  </ItemGroup>
+
+</Project>

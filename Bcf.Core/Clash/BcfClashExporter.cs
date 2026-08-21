@@ -85,7 +85,7 @@ namespace Bcf.Core.Clash
         {
             ClashDocumentInfo document = _source.GetDocument();
             IReadOnlyList<ClashTestInfo> tests = SelectTests(settings);
-            DateTimeOffset exportTime = DateTimeOffset.Now;
+            DateTimeOffset exportTime = settings.ExportTime ?? DateTimeOffset.Now;
 
             var builder = new ClashTopicBuilder(settings, document, result, exportTime);
             var statusFilter = new HashSet<string>(settings.IncludedClashStatuses ?? new List<string>(), StringComparer.Ordinal);
@@ -345,6 +345,7 @@ namespace Bcf.Core.Clash
             return new BcfWriteOptions
             {
                 Version = settings.Version,
+                EntryTimestamp = settings.ExportTime,
                 Author = settings.Author,
                 IncludeSnapshots = settings.IncludeSnapshots,
                 Project = new BcfProject

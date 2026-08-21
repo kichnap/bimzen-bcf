@@ -94,6 +94,15 @@ dotnet run --project Bcf.Vocabulary.Generator -- --check # проверить, �
 типы `markup.xsd` через `redefine`, поэтому `markup.xsd` обязан лежать
 в архиве рядом с ним.
 
+## Эталонные архивы
+
+```
+dotnet run --project Bcf.TestData.Generator
+```
+
+Собирает фикстуры в `test-data/` настоящим экспортёром и воспроизводимо
+побайтово. Подробности — в `test-data/README.md`.
+
 ## Схемы
 
 XSD взяты из репозитория buildingSMART `BCF-XML` (ветки `release_3_0` и `release_2_1`)

@@ -102,6 +102,14 @@ namespace Bcf.Core.Clash
         /// <summary>Куда пишется архив.</summary>
         public string OutputPath { get; set; }
 
+        /// <summary>
+        /// Время выгрузки: попадает в CreationDate замечаний и в метки времени
+        /// записей архива. Не задано — берётся текущий момент. Задают его агент,
+        /// которому нужна отметка времени задания, и генератор эталонных файлов,
+        /// которому нужна воспроизводимость.
+        /// </summary>
+        public DateTimeOffset? ExportTime { get; set; }
+
         /// <summary>Копия настроек — диалог правит её, а не оригинал.</summary>
         public BcfExportSettings Clone()
         {
@@ -128,7 +136,8 @@ namespace Bcf.Core.Clash
                 IncludeElementPaths = IncludeElementPaths,
                 ProjectName = ProjectName,
                 ProjectId = ProjectId,
-                OutputPath = OutputPath
+                OutputPath = OutputPath,
+                ExportTime = ExportTime
             };
         }
     }

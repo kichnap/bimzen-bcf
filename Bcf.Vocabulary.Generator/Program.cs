@@ -32,7 +32,7 @@ namespace Bcf.Vocabulary.Generator
                 {
                     if (!File.Exists(generatedFile))
                     {
-                        Console.Error.WriteLine("Нет файла " + VocabularyCodeGenerator.OutputRelativePath +
+                        Console.Error.WriteLine("Нет файла " + RepositoryPaths.OutputRelativePath +
                                                 ". Запустите генератор без --check.");
                         return 1;
                     }
@@ -40,7 +40,7 @@ namespace Bcf.Vocabulary.Generator
                     string existing = File.ReadAllText(generatedFile);
                     if (RepositoryPaths.NormalizeNewLines(existing) != RepositoryPaths.NormalizeNewLines(generated))
                     {
-                        Console.Error.WriteLine(VocabularyCodeGenerator.OutputRelativePath +
+                        Console.Error.WriteLine(RepositoryPaths.OutputRelativePath +
                                                 " разошёлся со справочником. Запустите генератор без --check и закоммитьте результат.");
                         return 1;
                     }

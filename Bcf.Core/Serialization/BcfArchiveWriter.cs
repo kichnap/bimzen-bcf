@@ -150,7 +150,14 @@ namespace Bcf.Core.Serialization
         {
             BcfEntryNames.Validate(entryName);
 
-            return _archive.CreateEntry(entryName, compressionLevel).Open();
+            ZipArchiveEntry entry = _archive.CreateEntry(entryName, compressionLevel);
+
+            // Метка времени записи по умолчанию — текущий момент. Заданная явно
+            // делает архив воспроизводимым: два прогона с одними данными дают
+            // одинаковые байты, и эталонные файлы не «шумят» в истории
+            if (Options.EntryTimestamp.HasValue) entry.LastWriteTime = Options.EntryTimestamp.Value;
+
+            return entry.Open();
         }
 
         /// <summary>Пишет XML-запись: UTF-8 без BOM, с отступами.</summary>
