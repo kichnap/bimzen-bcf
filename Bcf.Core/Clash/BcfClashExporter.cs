@@ -21,13 +21,21 @@ namespace Bcf.Core.Clash
     public class BcfClashExporter
     {
         private readonly IClashSource _source;
+        private readonly ITopicGuidStore _topicGuids;
 
         /// <summary>Остаток лимита снимков: -1 — без ограничения, 0 — исчерпан.</summary>
         private int _snapshotBudget = -1;
 
-        public BcfClashExporter(IClashSource source)
+        /// <param name="source">Источник коллизий.</param>
+        /// <param name="topicGuids">
+        /// Карта ранее выданных идентификаторов. Без неё каждая выгрузка
+        /// опирается только на детерминированный ключ — этого достаточно,
+        /// пока идентификаторы не начал выдавать сервер.
+        /// </param>
+        public BcfClashExporter(IClashSource source, ITopicGuidStore topicGuids = null)
         {
             _source = source ?? throw new ArgumentNullException(nameof(source));
+            _topicGuids = topicGuids ?? new InMemoryTopicGuidStore();
         }
 
         /// <summary>
@@ -206,7 +214,7 @@ namespace Bcf.Core.Clash
         {
             try
             {
-                BcfTopic topic = builder.Build(key, title, clashes);
+                BcfTopic topic = builder.Build(key, ResolveTopicGuid(key, result), title, clashes);
 
                 BcfViewpoint viewpoint = CreateViewpoint(topic.Guid, clashes, snapshot, result, cancellationToken);
                 if (viewpoint != null) topic.Viewpoints.Add(viewpoint);
@@ -227,6 +235,28 @@ namespace Bcf.Core.Clash
                 result.ClashesSkippedByError++;
                 result.Warn("Замечание '" + title + "' пропущено: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Идентификатор замечания: ранее выданный, если он известен, иначе
+        /// детерминированный из ключа. Первое важнее второго — на сервере
+        /// у топика может оказаться свой Guid, и повторная выгрузка обязана
+        /// попасть в тот же топик, а не создать рядом второй.
+        /// </summary>
+        private Guid ResolveTopicGuid(string key, BcfExportResult result)
+        {
+            Guid guid;
+
+            if (_topicGuids.TryGet(key, out guid))
+            {
+                result.TopicsReused++;
+                return guid;
+            }
+
+            guid = StableTopicKey.ToTopicGuid(key);
+            _topicGuids.Remember(key, guid);
+
+            return guid;
         }
 
         private BcfViewpoint CreateViewpoint(

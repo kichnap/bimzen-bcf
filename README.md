@@ -72,6 +72,7 @@ dotnet test Bcf.Core.Tests/Bcf.Core.Tests.csproj
 | Чтение архива | `BcfArchiveReader` — терпимый: чужие значения справочника сохраняются и попадают в отчёт |
 | Порт к хосту | `IClashSource` — «дай тесты», «дай коллизии», «дай вид»; реализуется потребителем |
 | Экспорт | `BcfClashExporter` + `BcfExportSettings` — без окон, прогресс через `IProgress`, отмена токеном |
+| Идемпотентность | `StableTopicKey` + `TopicGuidMap` — карта «ключ -> Guid замечания» в JSON рядом с моделью |
 
 ## Генерация констант из справочника
 

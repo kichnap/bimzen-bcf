@@ -38,11 +38,15 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
-        /// Строит замечание. Guid берётся из устойчивого ключа: идентификаторы
-        /// коллизий Navisworks пересоздаются при Reset теста, и повторная
-        /// выгрузка не должна плодить дубли.
+        /// Строит замечание.
         /// </summary>
-        public BcfTopic Build(string stableKey, string title, IReadOnlyList<ClashItem> clashes)
+        /// <param name="stableKey">Устойчивый ключ — из него выводятся идентификаторы комментариев.</param>
+        /// <param name="topicGuid">
+        /// Идентификатор замечания: ранее выданный либо детерминированный.
+        /// Идентификаторы коллизий Navisworks пересоздаются при Reset теста,
+        /// поэтому опираться на них нельзя.
+        /// </param>
+        public BcfTopic Build(string stableKey, Guid topicGuid, string title, IReadOnlyList<ClashItem> clashes)
         {
             if (clashes == null || clashes.Count == 0)
             {
@@ -53,7 +57,7 @@ namespace Bcf.Core.Clash
 
             var topic = new BcfTopic
             {
-                Guid = StableTopicKey.ToTopicGuid(stableKey),
+                Guid = topicGuid,
                 TopicType = _settings.TopicType,
                 TopicStatus = ResolveStatus(clashes),
                 Title = title,

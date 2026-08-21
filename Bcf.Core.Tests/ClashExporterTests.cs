@@ -255,6 +255,61 @@ namespace Bcf.Core.Tests
             Assert.Contains(result.Warnings, w => w.Contains("AspectRatio"));
         }
 
+        [Fact]
+        public void PreviouslyIssuedGuid_WinsOverDeterministicOne()
+        {
+            // Так выглядит топик, идентификатор которому выдал сервер:
+            // повторная выгрузка обязана попасть в него, а не создать рядом второй
+            var source = new FakeClashSource(Clash("Этаж 3", "New"));
+
+            var map = new TopicGuidMap();
+            Guid serverGuid = Guid.Parse("11111111-2222-3333-4444-555555555555");
+            map.Remember(StableTopicKey.ForGroup("ОВ vs КР", "Этаж 3"), serverGuid);
+
+            BcfReadResult read = ReadBack(source, Settings(), map);
+
+            Assert.Equal(serverGuid, read.Topics.Single().Guid);
+        }
+
+        [Fact]
+        public void SecondExport_ReusesGuidsFromMap()
+        {
+            var source = new FakeClashSource(Clash("Этаж 3", "New"), Clash("Этаж 4", "New"));
+            var map = new TopicGuidMap();
+
+            BcfExportResult first = Export(source, Settings(), map: map);
+            BcfExportResult second = Export(source, Settings(), map: map);
+
+            Assert.Equal(0, first.TopicsReused);
+            Assert.Equal(2, second.TopicsReused);
+            Assert.Equal(2, map.Count);
+        }
+
+        [Fact]
+        public void MapSurvivesRestart_AndKeepsTopicsStable()
+        {
+            // Между выгрузками Navisworks закрывают: карта уходит на диск
+            // и возвращается оттуда, идентификаторы не должны поменяться
+            var source = new FakeClashSource(Clash("Этаж 3", "New"));
+            var map = new TopicGuidMap();
+
+            IReadOnlyList<Guid> before = ReadBack(source, Settings(), map).Topics.Select(t => t.Guid).ToList();
+
+            TopicGuidMap restored;
+            using (var buffer = new MemoryStream())
+            {
+                map.Write(buffer);
+                using (var reading = new MemoryStream(buffer.ToArray()))
+                {
+                    restored = TopicGuidMap.Read(reading);
+                }
+            }
+
+            IReadOnlyList<Guid> after = ReadBack(source, Settings(), restored).Topics.Select(t => t.Guid).ToList();
+
+            Assert.Equal(before, after);
+        }
+
         private static BcfExportSettings Settings()
         {
             return new BcfExportSettings
@@ -266,11 +321,14 @@ namespace Bcf.Core.Tests
         }
 
         private static BcfExportResult Export(
-            IClashSource source, BcfExportSettings settings, IProgress<BcfExportProgress> progress = null)
+            IClashSource source,
+            BcfExportSettings settings,
+            IProgress<BcfExportProgress> progress = null,
+            ITopicGuidStore map = null)
         {
             using (var buffer = new MemoryStream())
             {
-                return new BcfClashExporter(source).Export(buffer, settings, progress);
+                return new BcfClashExporter(source, map).Export(buffer, settings, progress);
             }
         }
 
@@ -289,11 +347,11 @@ namespace Bcf.Core.Tests
             return SingleTopic(source, settings).TopicStatus;
         }
 
-        private static BcfReadResult ReadBack(IClashSource source, BcfExportSettings settings)
+        private static BcfReadResult ReadBack(IClashSource source, BcfExportSettings settings, ITopicGuidStore map = null)
         {
             using (var buffer = new MemoryStream())
             {
-                BcfExportResult result = new BcfClashExporter(source).Export(buffer, settings);
+                BcfExportResult result = new BcfClashExporter(source, map).Export(buffer, settings);
                 Assert.True(result.Succeeded, result.Error?.ToString());
 
                 using (var reading = new MemoryStream(buffer.ToArray()))

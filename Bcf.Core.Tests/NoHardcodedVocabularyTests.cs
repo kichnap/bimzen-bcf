@@ -42,7 +42,19 @@ namespace Bcf.Core.Tests
 
             foreach (string file in SourceFiles())
             {
-                string[] lines = File.ReadAllLines(file);
+                string[] lines;
+
+                try
+                {
+                    lines = File.ReadAllLines(file);
+                }
+                catch (IOException)
+                {
+                    // Тест ходит по живому рабочему каталогу: файл мог исчезнуть
+                    // или оказаться занят, пока идёт сборка. Это не находка,
+                    // а гонка — пропускаем такой файл, а не роняем прогон
+                    continue;
+                }
 
                 for (int i = 0; i < lines.Length; i++)
                 {
@@ -96,7 +108,18 @@ namespace Bcf.Core.Tests
         {
             if (!Directory.Exists(directory)) return Enumerable.Empty<string>();
 
-            return Directory.GetFiles(directory, "*.cs", SearchOption.AllDirectories)
+            string[] files;
+
+            try
+            {
+                files = Directory.GetFiles(directory, "*.cs", SearchOption.AllDirectories);
+            }
+            catch (IOException)
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            return files
                 .Where(f => !f.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase))
                 .Where(f => !IsBuildOutput(f));
         }

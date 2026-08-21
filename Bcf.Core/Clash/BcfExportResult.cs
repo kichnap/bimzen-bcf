@@ -24,6 +24,13 @@ namespace Bcf.Core.Clash
 
         public int TopicsCreated { get; internal set; }
 
+        /// <summary>
+        /// Замечания, которым достался ранее выданный идентификатор.
+        /// Ненулевое значение означает, что повторная выгрузка легла
+        /// в существующие топики, а не создала дубли.
+        /// </summary>
+        public int TopicsReused { get; internal set; }
+
         public int ClashesProcessed { get; internal set; }
 
         /// <summary>Пропущено по фильтру статусов.</summary>
