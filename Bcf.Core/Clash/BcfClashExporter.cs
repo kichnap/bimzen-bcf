@@ -101,7 +101,12 @@ namespace Bcf.Core.Clash
             {
                 Enabled = settings.IncludeSnapshots,
                 Width = settings.SnapshotWidth,
-                Height = settings.SnapshotHeight
+                Height = settings.SnapshotHeight,
+                Mode = settings.SnapshotMode,
+                Isolation = settings.SnapshotIsolation,
+                BoxMarginMeters = settings.SnapshotBoxMarginMeters,
+                TimeBudgetSeconds = settings.SnapshotTimeBudgetSeconds,
+                IncludeOverlay = settings.SnapshotIncludeOverlay
             };
 
             using (BcfArchiveWriter writer = BcfArchiveWriter.Create(destination, WriteOptions(settings, document)))
@@ -273,7 +278,17 @@ namespace Bcf.Core.Clash
             SnapshotRequest request = snapshot;
             if (snapshot.Enabled && _snapshotBudget == 0)
             {
-                request = new SnapshotRequest { Enabled = false, Width = snapshot.Width, Height = snapshot.Height };
+                request = new SnapshotRequest
+                {
+                    Enabled = false,
+                    Width = snapshot.Width,
+                    Height = snapshot.Height,
+                    Mode = snapshot.Mode,
+                    Isolation = snapshot.Isolation,
+                    BoxMarginMeters = snapshot.BoxMarginMeters,
+                    TimeBudgetSeconds = snapshot.TimeBudgetSeconds,
+                    IncludeOverlay = snapshot.IncludeOverlay
+                };
             }
 
             ClashViewpointData data;
@@ -309,6 +324,7 @@ namespace Bcf.Core.Clash
             if (data.Snapshot != null && data.Snapshot.Length > 0)
             {
                 result.SnapshotsCaptured++;
+                if (data.SnapshotIsEmpty) result.SnapshotsEmpty++;
                 if (_snapshotBudget > 0) _snapshotBudget--;
             }
 

@@ -47,6 +47,12 @@ namespace Bcf.Core.Clash
 
         public int SnapshotsCaptured { get; internal set; }
 
+        /// <summary>
+        /// Снимки, на которых почти нет геометрии. Считаются отдельно:
+        /// «снято 51» при 51 пустом кадре — это не отчёт, а дезинформация.
+        /// </summary>
+        public int SnapshotsEmpty { get; internal set; }
+
         /// <summary>Отчёт сериализатора: что не поместилось в версию формата.</summary>
         public BcfWriteReport WriteReport { get; internal set; }
 

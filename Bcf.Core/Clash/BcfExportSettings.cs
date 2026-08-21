@@ -49,6 +49,28 @@ namespace Bcf.Core.Clash
         public int SnapshotHeight { get; set; } = 600;
 
         /// <summary>
+        /// Как снимать: встроенным способом Navisworks или кастомным,
+        /// с наведением камеры и обрезкой окружения.
+        /// </summary>
+        public SnapshotMode SnapshotMode { get; set; } = SnapshotMode.Custom;
+
+        /// <summary>Что делать с окружением коллизии в кастомном режиме.</summary>
+        public SnapshotIsolation SnapshotIsolation { get; set; } = SnapshotIsolation.SectionBox;
+
+        /// <summary>Поле вокруг габаритов коллизии при обрезке, метры.</summary>
+        public double SnapshotBoxMarginMeters { get; set; } = 2.5;
+
+        /// <summary>
+        /// Бюджет времени на отрисовку кадра, секунды. Navisworks рисует сцену
+        /// постепенно: без бюджета кадр возвращается раньше, чем загрузилась
+        /// геометрия, и на снимке остаётся фон.
+        /// </summary>
+        public double SnapshotTimeBudgetSeconds { get; set; } = 5.0;
+
+        /// <summary>Рисовать ли подсветку выделенных элементов.</summary>
+        public bool SnapshotIncludeOverlay { get; set; } = true;
+
+        /// <summary>
         /// Предел числа снимков. Ноль — без ограничения. Снятие изображения —
         /// самая медленная операция экспорта, и на тысячах коллизий её
         /// осознанно ограничивают.
@@ -122,6 +144,11 @@ namespace Bcf.Core.Clash
                 IncludeSnapshots = IncludeSnapshots,
                 SnapshotWidth = SnapshotWidth,
                 SnapshotHeight = SnapshotHeight,
+                SnapshotMode = SnapshotMode,
+                SnapshotIsolation = SnapshotIsolation,
+                SnapshotBoxMarginMeters = SnapshotBoxMarginMeters,
+                SnapshotTimeBudgetSeconds = SnapshotTimeBudgetSeconds,
+                SnapshotIncludeOverlay = SnapshotIncludeOverlay,
                 MaxSnapshots = MaxSnapshots,
                 StatusMapping = new Dictionary<string, string>(StatusMapping, StringComparer.Ordinal),
                 TopicType = TopicType,

@@ -173,6 +173,40 @@ namespace Bcf.Core.Clash
         public string Status { get; set; }
     }
 
+    /// <summary>Как снимается изображение.</summary>
+    public enum SnapshotMode
+    {
+        /// <summary>
+        /// Встроенный: восстанавливается вид, как его отдаёт Navisworks,
+        /// и снимается кадр. Ничего не изолируется и не перенацеливается —
+        /// то, что пользователь увидел бы, просто перейдя к коллизии.
+        /// </summary>
+        Native,
+
+        /// <summary>
+        /// Кастомный: камера наводится на коллизию и подгоняется по её
+        /// габаритам, окружение обрезается, выделение подсвечивается.
+        /// </summary>
+        Custom
+    }
+
+    /// <summary>Что делать с окружением коллизии в кастомном режиме.</summary>
+    public enum SnapshotIsolation
+    {
+        /// <summary>Ничего не трогать.</summary>
+        None,
+
+        /// <summary>
+        /// Секущий бокс вокруг коллизии. Убирает оболочку здания и перекрытия,
+        /// оставляя контекст вокруг — то, что Clash Detective делает в своём
+        /// интерфейсе и чего нет в сохранённом виде.
+        /// </summary>
+        SectionBox,
+
+        /// <summary>Скрыть всё, кроме элементов коллизии.</summary>
+        HideOthers
+    }
+
     /// <summary>Что просят у источника при получении точки зрения.</summary>
     public class SnapshotRequest
     {
@@ -181,6 +215,23 @@ namespace Bcf.Core.Clash
         public int Width { get; set; } = 800;
 
         public int Height { get; set; } = 600;
+
+        public SnapshotMode Mode { get; set; } = SnapshotMode.Custom;
+
+        public SnapshotIsolation Isolation { get; set; } = SnapshotIsolation.SectionBox;
+
+        /// <summary>Поле вокруг габаритов коллизии, метры.</summary>
+        public double BoxMarginMeters { get; set; } = 2.5;
+
+        /// <summary>
+        /// Сколько секунд дать на отрисовку кадра. Navisworks рисует сцену
+        /// постепенно и возвращает то, что успел: без бюджета на снимке
+        /// остаётся фон и габаритные коробки вместо геометрии.
+        /// </summary>
+        public double TimeBudgetSeconds { get; set; } = 5.0;
+
+        /// <summary>Рисовать ли оверлей — без него не видно подсветки выделенных элементов.</summary>
+        public bool IncludeOverlay { get; set; } = true;
     }
 
     /// <summary>Точка зрения, полученная от хоста.</summary>
@@ -191,6 +242,13 @@ namespace Bcf.Core.Clash
 
         /// <summary>PNG. Null, если снимки отключены или снять не удалось.</summary>
         public byte[] Snapshot { get; set; }
+
+        /// <summary>
+        /// Кадр вышел пустым: почти весь фон. Считается отдельно от неснятых —
+        /// иначе отчёт бодро сообщает «снимков снято: 51», когда все они
+        /// бесполезны, и это выясняется только у приёмника.
+        /// </summary>
+        public bool SnapshotIsEmpty { get; set; }
 
         public IList<BcfClippingPlane> ClippingPlanes { get; } = new List<BcfClippingPlane>();
 

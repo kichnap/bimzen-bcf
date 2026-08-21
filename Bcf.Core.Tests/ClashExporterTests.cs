@@ -310,6 +310,45 @@ namespace Bcf.Core.Tests
             Assert.Equal(before, after);
         }
 
+        [Fact]
+        public void SnapshotSettings_ReachTheSource()
+        {
+            // Режим съёмки и всё, что к нему прилагается, задаёт пользователь
+            // в диалоге; источник обязан получить их без изменений
+            var source = new FakeClashSource(Clash("Этаж 3", "New"));
+
+            BcfExportSettings settings = Settings();
+            settings.SnapshotMode = SnapshotMode.Native;
+            settings.SnapshotIsolation = SnapshotIsolation.HideOthers;
+            settings.SnapshotBoxMarginMeters = 4.5;
+            settings.SnapshotTimeBudgetSeconds = 12;
+            settings.SnapshotIncludeOverlay = false;
+
+            Export(source, settings);
+
+            Assert.Equal(SnapshotMode.Native, source.LastRequest.Mode);
+            Assert.Equal(SnapshotIsolation.HideOthers, source.LastRequest.Isolation);
+            Assert.Equal(4.5, source.LastRequest.BoxMarginMeters);
+            Assert.Equal(12, source.LastRequest.TimeBudgetSeconds);
+            Assert.False(source.LastRequest.IncludeOverlay);
+        }
+
+        [Fact]
+        public void EmptySnapshots_AreCountedSeparately()
+        {
+            // «Снято 51» при 51 пустом кадре — это не отчёт, а дезинформация:
+            // ровно так выглядела первая выгрузка на реальной модели
+            var source = new FakeClashSource(Clash("Этаж 3", "New"), Clash("Этаж 4", "New"))
+            {
+                ReportEmptySnapshots = true
+            };
+
+            BcfExportResult result = Export(source, Settings());
+
+            Assert.Equal(2, result.SnapshotsCaptured);
+            Assert.Equal(2, result.SnapshotsEmpty);
+        }
+
         private static BcfExportSettings Settings()
         {
             return new BcfExportSettings
@@ -420,6 +459,12 @@ namespace Bcf.Core.Tests
             /// <summary>Имя группы, на которой источник «сломается».</summary>
             public string FailViewpointFor { get; set; }
 
+            /// <summary>Запрос, с которым источник просили снять последний кадр.</summary>
+            public SnapshotRequest LastRequest { get; private set; }
+
+            /// <summary>Отдавать ли снимки как пустые кадры.</summary>
+            public bool ReportEmptySnapshots { get; set; }
+
             public ClashDocumentInfo GetDocument()
             {
                 var document = new ClashDocumentInfo
@@ -459,11 +504,14 @@ namespace Bcf.Core.Tests
                     throw new InvalidOperationException("вид недоступен");
                 }
 
+                LastRequest = snapshot;
+
                 var data = new ClashViewpointData
                 {
                     Camera = CameraConverter.ToPerspective(
                         new Vector3(10, 10, 10), Rotation.Identity, Math.PI / 4, 4.0 / 3.0, LengthUnit.Meters),
-                    Snapshot = snapshot.Enabled ? TestData.FakePng() : null
+                    Snapshot = snapshot.Enabled ? TestData.FakePng() : null,
+                    SnapshotIsEmpty = snapshot.Enabled && ReportEmptySnapshots
                 };
 
                 return data;
