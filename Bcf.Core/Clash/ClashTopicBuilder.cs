@@ -98,6 +98,98 @@ namespace Bcf.Core.Clash
             return topic;
         }
 
+        /// <summary>
+        /// Замечание из сохранённого вида.
+        ///
+        /// Тип — Issue, а не Clash, и без метки автопроверки: это то, что
+        /// человек увидел глазами и зафиксировал видом, а не результат
+        /// автоматической проверки. Сервис должен уметь их различать
+        /// без разбора текста.
+        /// </summary>
+        public BcfTopic BuildFromViewpoint(Guid topicGuid, SavedViewpointInfo viewpoint)
+        {
+            if (viewpoint == null) throw new ArgumentNullException(nameof(viewpoint));
+
+            var topic = new BcfTopic
+            {
+                Guid = topicGuid,
+                TopicType = _settings.SavedViewpointTopicType,
+                TopicStatus = BcfVocabulary.TopicStatuses.Default,
+                Title = string.IsNullOrWhiteSpace(viewpoint.Name) ? "Замечание" : viewpoint.Name,
+                Priority = _settings.Priority,
+                Stage = _settings.Stage,
+                CreationDate = viewpoint.CreatedDate ?? _exportTime,
+                CreationAuthor = _settings.Author,
+                Description = BuildViewpointDescription(viewpoint)
+            };
+
+            foreach (string label in _settings.Labels)
+            {
+                // Auto означает «нашла автопроверка» — на ручном замечании
+                // эта метка врёт, и сервис по ней построит неверную статистику
+                if (string.IsNullOrWhiteSpace(label)) continue;
+                if (string.Equals(label, BcfVocabulary.TopicLabels.Auto, StringComparison.Ordinal)) continue;
+
+                if (!topic.Labels.Contains(label)) topic.Labels.Add(label);
+            }
+
+            foreach (ClashModelInfo model in _document.Models)
+            {
+                topic.Files.Add(new BcfFile
+                {
+                    Filename = model.FileName,
+                    Date = model.Date,
+                    IsExternal = true
+                });
+            }
+
+            if (_settings.IncludeComments)
+            {
+                AddViewpointComments(topic, viewpoint);
+            }
+
+            return topic;
+        }
+
+        private static string BuildViewpointDescription(SavedViewpointInfo viewpoint)
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine("Замечание из сохранённого вида Navisworks.");
+
+            if (!string.IsNullOrWhiteSpace(viewpoint.FolderPath))
+            {
+                sb.Append("Папка: ").AppendLine(viewpoint.FolderPath);
+            }
+
+            if (viewpoint.HasVisibilityOverrides)
+            {
+                // Важное предупреждение для приёмника: автор вида что-то скрывал,
+                // и открытый в другой программе вид будет выглядеть иначе
+                sb.AppendLine("В виде скрыта часть модели — снимок показывает то, что видел автор.");
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+
+        private void AddViewpointComments(BcfTopic topic, SavedViewpointInfo viewpoint)
+        {
+            foreach (ClashCommentInfo comment in viewpoint.Comments)
+            {
+                if (string.IsNullOrWhiteSpace(comment.Text)) continue;
+
+                string key = comment.Author + "|" + comment.Date.ToString("O", CultureInfo.InvariantCulture) + "|" + comment.Text;
+
+                topic.Comments.Add(new BcfComment
+                {
+                    Guid = StableTopicKey.ToTopicGuid(StableTopicKey.Compute(new[] { topic.Guid.ToString("D"), key })),
+                    Author = string.IsNullOrWhiteSpace(comment.Author) ? _settings.Author : comment.Author,
+                    Date = comment.Date == default(DateTimeOffset) ? _exportTime : comment.Date,
+                    Text = comment.Text
+                });
+            }
+        }
+
         /// <summary>Элементы всех коллизий замечания, без повторов.</summary>
         public static IReadOnlyList<BcfComponent> Components(IReadOnlyList<ClashItem> clashes)
         {

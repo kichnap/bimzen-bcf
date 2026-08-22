@@ -54,8 +54,12 @@ namespace Bcf.Core.Clash
         /// </summary>
         public SnapshotMode SnapshotMode { get; set; } = SnapshotMode.Custom;
 
-        /// <summary>Что делать с окружением коллизии в кастомном режиме.</summary>
-        public SnapshotIsolation SnapshotIsolation { get; set; } = SnapshotIsolation.SectionBox;
+        /// <summary>
+        /// Что делать с окружением коллизии в кастомном режиме. По умолчанию —
+        /// бокс и полупрозрачное окружение: на снимке видно и что столкнулось,
+        /// и где именно. Выбрано по результатам прогонов на реальных проектах.
+        /// </summary>
+        public SnapshotIsolation SnapshotIsolation { get; set; } = SnapshotIsolation.SectionBoxAndTransparentSurroundings;
 
         /// <summary>Поле вокруг габаритов коллизии при обрезке, метры.</summary>
         public double SnapshotBoxMarginMeters { get; set; } = 2.5;
@@ -116,6 +120,22 @@ namespace Bcf.Core.Clash
         /// <summary>Включать ли пути элементов в дереве модели в описание.</summary>
         public bool IncludeElementPaths { get; set; } = true;
 
+        /// <summary>
+        /// Выгружать ли сохранённые виды как отдельные замечания.
+        /// Это замечания, которые нельзя вывести из логики коллизий:
+        /// прибор повёрнут не той стороной, труба посреди помещения.
+        /// </summary>
+        public bool IncludeSavedViewpoints { get; set; }
+
+        /// <summary>Идентификаторы выбранных видов. Пусто — значит все.</summary>
+        public IList<string> SelectedViewpointIds { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Тип замечаний, созданных из сохранённых видов. По умолчанию Issue,
+        /// а не Clash: это ручное замечание, а не результат автопроверки.
+        /// </summary>
+        public string SavedViewpointTopicType { get; set; } = BcfVocabulary.TopicTypes.Issue;
+
         /// <summary>Имя и идентификатор проекта для project.bcfp.</summary>
         public string ProjectName { get; set; }
 
@@ -161,6 +181,9 @@ namespace Bcf.Core.Clash
                 IncludeComments = IncludeComments,
                 IncludeDistance = IncludeDistance,
                 IncludeElementPaths = IncludeElementPaths,
+                IncludeSavedViewpoints = IncludeSavedViewpoints,
+                SelectedViewpointIds = new List<string>(SelectedViewpointIds),
+                SavedViewpointTopicType = SavedViewpointTopicType,
                 ProjectName = ProjectName,
                 ProjectId = ProjectId,
                 OutputPath = OutputPath,

@@ -24,6 +24,9 @@ namespace Bcf.Core.Clash
 
         public int TopicsCreated { get; internal set; }
 
+        /// <summary>Замечания, созданные из сохранённых видов, а не из коллизий.</summary>
+        public int ViewpointTopicsCreated { get; internal set; }
+
         /// <summary>
         /// Замечания, которым достался ранее выданный идентификатор.
         /// Ненулевое значение означает, что повторная выгрузка легла
