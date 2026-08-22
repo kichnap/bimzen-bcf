@@ -51,7 +51,18 @@ namespace Bcf.Core.Vocabulary
         /// <param name="users">Автор выгрузки и встреченные исполнители, уже пропущенные через <see cref="BcfUsers"/>.</param>
         public static void Write30(Stream stream, IEnumerable<string> users)
         {
+            Write30(stream, users, null);
+        }
+
+        /// <param name="extra">
+        /// Чужие значения, попавшие в архив при обновлении существующего файла.
+        /// Файл, который мы пишем, обязан объявлять всё, что в нём есть.
+        /// </param>
+        public static void Write30(Stream stream, IEnumerable<string> users, BcfExtraVocabulary extra)
+        {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
+
+            extra = extra ?? new BcfExtraVocabulary();
 
             using (XmlWriter writer = CreateWriter(stream))
             {
@@ -63,12 +74,12 @@ namespace Bcf.Core.Vocabulary
                 // SnippetTypes, Stages. Перестановка делает файл невалидным —
                 // в эталоне bcf-vocabularies/extensions.xml Stages стоит выше Users,
                 // и по схеме такой файл не проходит.
-                WriteValues(writer, "TopicTypes", "TopicType", BcfVocabulary.TopicTypes.All);
-                WriteValues(writer, "TopicStatuses", "TopicStatus", BcfVocabulary.TopicStatuses.All);
-                WriteValues(writer, "Priorities", "Priority", BcfVocabulary.Priorities.All);
-                WriteValues(writer, "TopicLabels", "TopicLabel", BcfVocabulary.TopicLabels.All);
+                WriteValues(writer, "TopicTypes", "TopicType", BcfExtraVocabulary.Combine(BcfVocabulary.TopicTypes.All, extra.TopicTypes));
+                WriteValues(writer, "TopicStatuses", "TopicStatus", BcfExtraVocabulary.Combine(BcfVocabulary.TopicStatuses.All, extra.TopicStatuses));
+                WriteValues(writer, "Priorities", "Priority", BcfExtraVocabulary.Combine(BcfVocabulary.Priorities.All, extra.Priorities));
+                WriteValues(writer, "TopicLabels", "TopicLabel", BcfExtraVocabulary.Combine(BcfVocabulary.TopicLabels.All, extra.TopicLabels));
                 WriteValues(writer, "Users", "User", Materialize(users));
-                WriteValues(writer, "Stages", "Stage", BcfVocabulary.Stages.All);
+                WriteValues(writer, "Stages", "Stage", BcfExtraVocabulary.Combine(BcfVocabulary.Stages.All, extra.Stages));
 
                 writer.WriteEndElement();
                 writer.WriteEndDocument();
@@ -78,7 +89,15 @@ namespace Bcf.Core.Vocabulary
         /// <summary>Пишет extensions.xsd (BCF 2.1) в поток. UTF-8 без BOM.</summary>
         public static void Write21(Stream stream, IEnumerable<string> users)
         {
+            Write21(stream, users, null);
+        }
+
+        /// <param name="extra">Чужие значения — см. <see cref="Write30(Stream, IEnumerable{string}, BcfExtraVocabulary)"/>.</param>
+        public static void Write21(Stream stream, IEnumerable<string> users, BcfExtraVocabulary extra)
+        {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
+
+            extra = extra ?? new BcfExtraVocabulary();
 
             using (XmlWriter writer = CreateWriter(stream))
             {
@@ -91,12 +110,12 @@ namespace Bcf.Core.Vocabulary
                 // Переопределяются только простые типы, объявленные в markup.xsd 2.1.
                 // SnippetType туда не входит — там это обычный строковый атрибут,
                 // и redefine на него схему сломает.
-                WriteEnumeration(writer, "TopicType", BcfVocabulary.TopicTypes.All);
-                WriteEnumeration(writer, "TopicStatus", BcfVocabulary.TopicStatuses.All);
-                WriteEnumeration(writer, "TopicLabel", BcfVocabulary.TopicLabels.All);
-                WriteEnumeration(writer, "Priority", BcfVocabulary.Priorities.All);
+                WriteEnumeration(writer, "TopicType", BcfExtraVocabulary.Combine(BcfVocabulary.TopicTypes.All, extra.TopicTypes));
+                WriteEnumeration(writer, "TopicStatus", BcfExtraVocabulary.Combine(BcfVocabulary.TopicStatuses.All, extra.TopicStatuses));
+                WriteEnumeration(writer, "TopicLabel", BcfExtraVocabulary.Combine(BcfVocabulary.TopicLabels.All, extra.TopicLabels));
+                WriteEnumeration(writer, "Priority", BcfExtraVocabulary.Combine(BcfVocabulary.Priorities.All, extra.Priorities));
                 WriteEnumeration(writer, "UserIdType", Materialize(users));
-                WriteEnumeration(writer, "Stage", BcfVocabulary.Stages.All);
+                WriteEnumeration(writer, "Stage", BcfExtraVocabulary.Combine(BcfVocabulary.Stages.All, extra.Stages));
 
                 writer.WriteEndElement();
                 writer.WriteEndElement();

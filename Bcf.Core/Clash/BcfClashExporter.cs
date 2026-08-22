@@ -27,6 +27,9 @@ namespace Bcf.Core.Clash
         /// <summary>Остаток лимита снимков: -1 — без ограничения, 0 — исчерпан.</summary>
         private int _snapshotBudget = -1;
 
+        /// <summary>Обновляемый архив; null — выгрузка пишет файл с нуля.</summary>
+        private ExistingBcfArchive _existing;
+
         /// <param name="source">Источник коллизий.</param>
         /// <param name="topicGuids">
         /// Карта ранее выданных идентификаторов. Без неё каждая выгрузка
@@ -59,6 +62,28 @@ namespace Bcf.Core.Clash
             IProgress<BcfExportProgress> progress = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            return Export(destination, null, settings, progress, cancellationToken);
+        }
+
+        /// <summary>
+        /// Пишет архив, обновляя существующий.
+        /// </summary>
+        /// <param name="destination">Поток нового архива.</param>
+        /// <param name="existingArchive">
+        /// Обновляемый файл, открытый на чтение. Пишем всегда в новый поток,
+        /// а не поверх исходного: прерванная запись поверх оставила бы
+        /// пользователя без обеих версий файла.
+        /// </param>
+        /// <param name="settings">Настройки экспорта.</param>
+        /// <param name="progress">Приёмник прогресса; может быть null.</param>
+        /// <param name="cancellationToken">Токен отмены.</param>
+        public BcfExportResult Export(
+            Stream destination,
+            Stream existingArchive,
+            BcfExportSettings settings,
+            IProgress<BcfExportProgress> progress = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
             if (destination == null) throw new ArgumentNullException(nameof(destination));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
 
@@ -66,7 +91,7 @@ namespace Bcf.Core.Clash
 
             try
             {
-                Run(destination, settings, progress, result, cancellationToken);
+                Run(destination, existingArchive, settings, progress, result, cancellationToken);
                 result.Succeeded = !result.Cancelled;
             }
             catch (OperationCanceledException)
@@ -86,6 +111,7 @@ namespace Bcf.Core.Clash
 
         private void Run(
             Stream destination,
+            Stream existingArchive,
             BcfExportSettings settings,
             IProgress<BcfExportProgress> progress,
             BcfExportResult result,
@@ -121,6 +147,7 @@ namespace Bcf.Core.Clash
                 IncludeOverlay = settings.SnapshotIncludeOverlay
             };
 
+            using (_existing = OpenExisting(existingArchive, settings, result))
             using (BcfArchiveWriter writer = BcfArchiveWriter.Create(destination, WriteOptions(settings, document)))
             {
                 foreach (ClashTestInfo test in tests)
@@ -133,7 +160,16 @@ namespace Bcf.Core.Clash
                     ExportTest(test, settings, statusFilter, builder, writer, snapshot, progress, state, result, cancellationToken);
                 }
 
-                ExportSavedViewpoints(viewpoints, builder, writer, snapshot, progress, state, result, cancellationToken);
+                ExportSavedViewpoints(viewpoints, builder, writer, settings, snapshot, progress, state, result, cancellationToken);
+
+                if (_existing != null)
+                {
+                    // Замечания, которых выгрузка не касалась: коллизия разобрана
+                    // и в проверку больше не попадает — из файла она пропасть
+                    // не должна
+                    result.TopicsKept += _existing.CopyRemainingTopics(writer);
+                    _existing.CopyExtraEntries(writer);
+                }
 
                 writer.Complete();
                 result.WriteReport = writer.Report;
@@ -143,6 +179,204 @@ namespace Bcf.Core.Clash
                     result.Warn(warning);
                 }
             }
+
+            _existing = null;
+        }
+
+        /// <summary>
+        /// Открывает обновляемый архив. Null — когда обновлять нечего или
+        /// не просили.
+        /// </summary>
+        private static ExistingBcfArchive OpenExisting(
+            Stream existingArchive, BcfExportSettings settings, BcfExportResult result)
+        {
+            if (settings.UpdateMode == BcfUpdateMode.Overwrite || existingArchive == null) return null;
+
+            ExistingBcfArchive existing = ExistingBcfArchive.Open(existingArchive);
+
+            if (existing.Version != settings.Version)
+            {
+                existing.Dispose();
+
+                // Смешивать версии в одном архиве нельзя, а молча переключить
+                // выбранную пользователем версию значит соврать о том,
+                // что мы записали
+                throw new InvalidOperationException(
+                    "Файл выгрузки записан в формате BCF " + existing.Version.ToVersionId() +
+                    ", а выбрана версия " + settings.Version.ToVersionId() +
+                    ". Выберите ту же версию или сохраните выгрузку в новый файл.");
+            }
+
+            foreach (string warning in existing.Warnings)
+            {
+                result.Warn("Обновляемый файл: " + warning);
+            }
+
+            return existing;
+        }
+
+        /// <summary>
+        /// Записывает замечание — своё или, если оно уже есть в обновляемом
+        /// файле, слитое с тем, что там лежит.
+        /// </summary>
+        private void Emit(
+            BcfArchiveWriter writer,
+            BcfTopic topic,
+            BcfExportSettings settings,
+            BcfExportResult result,
+            BcfExportProgress state)
+        {
+            BcfTopic existing = _existing == null ? null : _existing.Find(topic.Guid);
+
+            if (existing != null)
+            {
+                Merge(topic, existing, settings);
+                _existing.MarkHandled(topic.Guid);
+            }
+
+            writer.WriteTopic(topic);
+
+            result.TopicsCreated++;
+            if (existing != null) result.TopicsUpdated++;
+
+            state.TopicsWritten++;
+        }
+
+        /// <summary>
+        /// Решает судьбу замечания, которое уже есть в обновляемом файле:
+        /// перенести как есть или переписать нашими данными.
+        ///
+        /// Вызывается до сборки замечания и до снятия кадра: в режиме
+        /// «только добавить» повторная выгрузка не должна заново рисовать
+        /// пять тысяч снимков ради того, чтобы их выбросить.
+        /// </summary>
+        /// <returns>true — замечание перенесено, своё строить не нужно.</returns>
+        private bool KeepExisting(
+            Guid topicGuid,
+            BcfArchiveWriter writer,
+            BcfExportSettings settings,
+            BcfExportResult result)
+        {
+            if (_existing == null) return false;
+
+            BcfTopic existing = _existing.Find(topicGuid);
+            if (existing == null) return false;
+
+            string foreign = settings.UpdateMode == BcfUpdateMode.AppendNew
+                ? null
+                : ForeignData(existing, topicGuid);
+
+            if (settings.UpdateMode == BcfUpdateMode.UpdateAndAppend && foreign == null) return false;
+
+            if (!_existing.CopyTopic(topicGuid, writer)) return false;
+
+            if (foreign != null)
+            {
+                result.Warn(
+                    "Замечание «" + existing.Title + "» перенесено без изменений: в нём есть " + foreign +
+                    ", чего выгрузка не хранит и при перезаписи потеряла бы.");
+            }
+
+            result.TopicsKept++;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Чужие данные замечания, которых наша модель не хранит. Null —
+        /// замечание можно переписать без потерь.
+        /// </summary>
+        private static string ForeignData(BcfTopic existing, Guid topicGuid)
+        {
+            if (existing.UnsupportedData.Count > 0)
+            {
+                return string.Join(", ", Enumerable.ToArray(existing.UnsupportedData));
+            }
+
+            Guid ours = ViewpointGuidFor(topicGuid);
+
+            foreach (BcfViewpoint viewpoint in existing.Viewpoints)
+            {
+                // Точку зрения, добавленную в приёмнике, мы бы заменили своей
+                if (viewpoint.Guid != ours && viewpoint.Guid != Guid.Empty) return "точки зрения из приёмника";
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Переносит в наше замечание то, что могло измениться у приёмника.
+        /// </summary>
+        private static void Merge(BcfTopic fresh, BcfTopic existing, BcfExportSettings settings)
+        {
+            // Замечание создано тогда, а не сейчас: дата и автор создания
+            // принадлежат первой выгрузке
+            if (existing.CreationDate != default(DateTimeOffset)) fresh.CreationDate = existing.CreationDate;
+            if (!string.IsNullOrWhiteSpace(existing.CreationAuthor)) fresh.CreationAuthor = existing.CreationAuthor;
+
+            // Номер, выданный сервером, переживает любую перезапись
+            if (!string.IsNullOrWhiteSpace(existing.ServerAssignedId)) fresh.ServerAssignedId = existing.ServerAssignedId;
+
+            if (settings.KeepReceiverChanges)
+            {
+                if (!string.IsNullOrWhiteSpace(existing.TopicStatus)) fresh.TopicStatus = existing.TopicStatus;
+                if (!string.IsNullOrWhiteSpace(existing.AssignedTo)) fresh.AssignedTo = existing.AssignedTo;
+                if (existing.DueDate.HasValue) fresh.DueDate = existing.DueDate;
+            }
+
+            MergeComments(fresh, existing);
+
+            foreach (string link in existing.ReferenceLinks)
+            {
+                if (!fresh.ReferenceLinks.Contains(link)) fresh.ReferenceLinks.Add(link);
+            }
+
+            foreach (Guid related in existing.RelatedTopics)
+            {
+                if (!fresh.RelatedTopics.Contains(related)) fresh.RelatedTopics.Add(related);
+            }
+
+            fresh.ModifiedDate = settings.ExportTime ?? DateTimeOffset.Now;
+            fresh.ModifiedAuthor = settings.Author;
+        }
+
+        /// <summary>
+        /// Комментарии приёмника дописываются к нашим и идут по времени:
+        /// переписка по замечанию должна читаться сверху вниз.
+        /// </summary>
+        private static void MergeComments(BcfTopic fresh, BcfTopic existing)
+        {
+            var known = new HashSet<Guid>();
+
+            foreach (BcfComment comment in fresh.Comments)
+            {
+                known.Add(comment.Guid);
+            }
+
+            var merged = new List<BcfComment>(fresh.Comments);
+
+            foreach (BcfComment comment in existing.Comments)
+            {
+                if (comment.Guid != Guid.Empty && !known.Add(comment.Guid)) continue;
+
+                merged.Add(comment);
+            }
+
+            merged.Sort((left, right) => left.Date.CompareTo(right.Date));
+
+            fresh.Comments.Clear();
+
+            foreach (BcfComment comment in merged)
+            {
+                fresh.Comments.Add(comment);
+            }
+        }
+
+        /// <summary>Идентификатор нашей точки зрения — он выводится из замечания.</summary>
+        private static Guid ViewpointGuidFor(Guid topicGuid)
+        {
+            return StableTopicKey.ToTopicGuid(
+                StableTopicKey.Compute(new[] { "viewpoint", topicGuid.ToString("D") }));
         }
 
         /// <summary>
@@ -186,6 +420,7 @@ namespace Bcf.Core.Clash
             IReadOnlyList<SavedViewpointInfo> viewpoints,
             ClashTopicBuilder builder,
             BcfArchiveWriter writer,
+            BcfExportSettings settings,
             SnapshotRequest snapshot,
             IProgress<BcfExportProgress> progress,
             BcfExportProgress state,
@@ -205,16 +440,17 @@ namespace Bcf.Core.Clash
                     string key = StableTopicKey.Compute(new[] { "savedviewpoint", viewpoint.Id });
                     Guid guid = ResolveTopicGuid(key, result);
 
-                    BcfTopic topic = builder.BuildFromViewpoint(guid, viewpoint);
+                    if (!KeepExisting(guid, writer, settings, result))
+                    {
+                        BcfTopic topic = builder.BuildFromViewpoint(guid, viewpoint);
 
-                    BcfViewpoint bcfViewpoint = CreateSavedViewpoint(guid, viewpoint, snapshot, result, cancellationToken);
-                    if (bcfViewpoint != null) topic.Viewpoints.Add(bcfViewpoint);
+                        BcfViewpoint bcfViewpoint = CreateSavedViewpoint(guid, viewpoint, snapshot, result, cancellationToken);
+                        if (bcfViewpoint != null) topic.Viewpoints.Add(bcfViewpoint);
 
-                    writer.WriteTopic(topic);
+                        Emit(writer, topic, settings, result, state);
 
-                    result.TopicsCreated++;
-                    result.ViewpointTopicsCreated++;
-                    state.TopicsWritten++;
+                        result.ViewpointTopicsCreated++;
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -337,7 +573,7 @@ namespace Bcf.Core.Clash
                         StableTopicKey.ForClash(clash.TestName, clash.Elements.Select(e => e.IfcGuid ?? e.ElementId)),
                         ClashTitle(clash),
                         new List<ClashItem> { clash },
-                        builder, writer, snapshot, result, state, cancellationToken);
+                        builder, writer, settings, snapshot, result, state, cancellationToken);
                 }
                 else
                 {
@@ -367,7 +603,7 @@ namespace Bcf.Core.Clash
                     StableTopicKey.ForGroup(test.Name, bucket),
                     bucket + " — " + test.Name,
                     items,
-                    builder, writer, snapshot, result, state, cancellationToken);
+                    builder, writer, settings, snapshot, result, state, cancellationToken);
             }
 
             Report(progress, state);
@@ -379,6 +615,7 @@ namespace Bcf.Core.Clash
             List<ClashItem> clashes,
             ClashTopicBuilder builder,
             BcfArchiveWriter writer,
+            BcfExportSettings settings,
             SnapshotRequest snapshot,
             BcfExportResult result,
             BcfExportProgress state,
@@ -386,15 +623,19 @@ namespace Bcf.Core.Clash
         {
             try
             {
-                BcfTopic topic = builder.Build(key, ResolveTopicGuid(key, result), title, clashes);
+                Guid topicGuid = ResolveTopicGuid(key, result);
+
+                // Решение принимается до снятия кадра: рисовать снимок,
+                // который тут же будет выброшен, — самая дорогая ошибка,
+                // какую может допустить повторная выгрузка
+                if (KeepExisting(topicGuid, writer, settings, result)) return;
+
+                BcfTopic topic = builder.Build(key, topicGuid, title, clashes);
 
                 BcfViewpoint viewpoint = CreateViewpoint(topic.Guid, clashes, snapshot, result, cancellationToken);
                 if (viewpoint != null) topic.Viewpoints.Add(viewpoint);
 
-                writer.WriteTopic(topic);
-
-                result.TopicsCreated++;
-                state.TopicsWritten++;
+                Emit(writer, topic, settings, result, state);
             }
             catch (OperationCanceledException)
             {

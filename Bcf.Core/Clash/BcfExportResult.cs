@@ -34,6 +34,18 @@ namespace Bcf.Core.Clash
         /// </summary>
         public int TopicsReused { get; internal set; }
 
+        /// <summary>
+        /// Существующие замечания, переписанные данными из Navisworks.
+        /// Входят в <see cref="TopicsCreated"/>: в файл их записали мы.
+        /// </summary>
+        public int TopicsUpdated { get; internal set; }
+
+        /// <summary>
+        /// Замечания, перенесённые из обновляемого файла как есть — вместе
+        /// с чужими статусами, комментариями и вложениями.
+        /// </summary>
+        public int TopicsKept { get; internal set; }
+
         public int ClashesProcessed { get; internal set; }
 
         /// <summary>Пропущено по фильтру статусов.</summary>

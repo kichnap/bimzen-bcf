@@ -17,6 +17,27 @@ namespace Bcf.Core.Clash
         LevelPerTopic
     }
 
+    /// <summary>Что делать, если файл выгрузки уже существует.</summary>
+    public enum BcfUpdateMode
+    {
+        /// <summary>Перезаписать файл целиком. Поведение по умолчанию.</summary>
+        Overwrite,
+
+        /// <summary>
+        /// Добавить только новые замечания, существующие не трогать вовсе.
+        /// Самый безопасный режим: всё, что появилось в файле у приёмника —
+        /// статусы, комментарии, вложения, — остаётся байт в байт.
+        /// </summary>
+        AppendNew,
+
+        /// <summary>
+        /// Добавить новые и обновить существующие данными из Navisworks.
+        /// Замечание, в котором приёмник оставил то, чего нет в нашей модели,
+        /// не переписывается: молча терять чужие данные хуже, чем не обновить.
+        /// </summary>
+        UpdateAndAppend
+    }
+
     /// <summary>
     /// Настройки экспорта — простой сериализуемый объект, а не собственность диалога.
     ///
@@ -145,6 +166,21 @@ namespace Bcf.Core.Clash
         public string OutputPath { get; set; }
 
         /// <summary>
+        /// Что делать, если файл уже существует. По умолчанию — перезаписать:
+        /// так вело себя первое издание экспорта, и менять поведение молча,
+        /// не спросив, нельзя.
+        /// </summary>
+        public BcfUpdateMode UpdateMode { get; set; } = BcfUpdateMode.Overwrite;
+
+        /// <summary>
+        /// Сохранять ли при обновлении статус, исполнителя и срок, изменённые
+        /// в приёмнике. По умолчанию да: работу координатора в BIMcollab
+        /// или Solibri повторная выгрузка затирать не должна. Выключается,
+        /// когда источник истины по статусам — Clash Detective.
+        /// </summary>
+        public bool KeepReceiverChanges { get; set; } = true;
+
+        /// <summary>
         /// Время выгрузки: попадает в CreationDate замечаний и в метки времени
         /// записей архива. Не задано — берётся текущий момент. Задают его агент,
         /// которому нужна отметка времени задания, и генератор эталонных файлов,
@@ -187,6 +223,8 @@ namespace Bcf.Core.Clash
                 ProjectName = ProjectName,
                 ProjectId = ProjectId,
                 OutputPath = OutputPath,
+                UpdateMode = UpdateMode,
+                KeepReceiverChanges = KeepReceiverChanges,
                 ExportTime = ExportTime
             };
         }

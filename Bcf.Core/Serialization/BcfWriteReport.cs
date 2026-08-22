@@ -19,6 +19,9 @@ namespace Bcf.Core.Serialization
 
         public int SnapshotsWritten { get; internal set; }
 
+        /// <summary>Записей, перенесённых из обновляемого архива как есть.</summary>
+        public int EntriesCopied { get; internal set; }
+
         /// <summary>Замечания пользователю в порядке появления.</summary>
         public IReadOnlyList<string> Warnings
         {

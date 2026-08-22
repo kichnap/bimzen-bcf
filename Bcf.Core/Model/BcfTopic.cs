@@ -86,5 +86,15 @@ namespace Bcf.Core.Model
         /// и файл из BIMcollab или Revizto законно приходит со своими.
         /// </summary>
         public IDictionary<string, string> ExternalValues { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Элементы markup, которых эта модель не хранит: вложения, ссылки
+        /// на документы, фрагменты IFC. Заполняется при чтении чужого архива.
+        ///
+        /// Нужны, чтобы обновление существующего файла знало, чего оно лишит
+        /// пользователя: замечание с такими данными не переписывается, а
+        /// переносится в новый архив как есть.
+        /// </summary>
+        public IList<string> UnsupportedData { get; } = new List<string>();
     }
 }

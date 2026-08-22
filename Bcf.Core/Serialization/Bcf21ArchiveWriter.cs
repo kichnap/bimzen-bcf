@@ -60,11 +60,11 @@ namespace Bcf.Core.Serialization
             writer.WriteEndElement();
         }
 
-        protected override void WriteExtensions(IReadOnlyList<string> users)
+        protected override void WriteExtensions(IReadOnlyList<string> users, BcfExtraVocabulary extra)
         {
             using (Stream stream = CreateEntry(ExtensionsWriter.Bcf21FileName, CompressionLevel.Optimal))
             {
-                ExtensionsWriter.Write21(stream, users);
+                ExtensionsWriter.Write21(stream, users, extra);
             }
 
             // extensions.xsd переопределяет типы markup.xsd через redefine,

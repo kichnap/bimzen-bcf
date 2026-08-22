@@ -65,6 +65,22 @@ namespace Bcf.Core.Serialization
         }
     }
 
+    /// <summary>
+    /// Что лежит в архиве, без разбора замечаний. Хватает, чтобы показать
+    /// пользователю выбранный файл и решить, можно ли в него дописывать.
+    /// </summary>
+    public class BcfArchiveSummary
+    {
+        /// <summary>Версия из bcf.version.</summary>
+        public BcfVersion Version { get; internal set; } = BcfVersion.Bcf30;
+
+        /// <summary>Есть ли в архиве bcf.version вообще.</summary>
+        public bool HasVersionFile { get; internal set; }
+
+        /// <summary>Сколько в архиве замечаний.</summary>
+        public int TopicCount { get; internal set; }
+    }
+
     /// <summary>Незнакомое значение справочника, встреченное при чтении.</summary>
     public class BcfExternalValue
     {

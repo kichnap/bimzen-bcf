@@ -31,31 +31,71 @@ namespace Bcf.Core.Serialization
         {
             if (archiveStream == null) throw new ArgumentNullException(nameof(archiveStream));
 
-            var result = new BcfReadResult();
-
             using (var archive = new ZipArchive(archiveStream, ZipArchiveMode.Read, leaveOpen: true))
             {
-                ReadVersion(archive, result);
-                ReadProject(archive, result);
+                return Read(archive);
+            }
+        }
 
-                foreach (ZipArchiveEntry entry in archive.Entries)
+        /// <summary>
+        /// Чтение уже открытого архива. Нужно тому, кто держит архив сам —
+        /// обновление существующего файла переносит из него записи как есть
+        /// и не может позволить себе второй ZipArchive поверх того же потока.
+        /// </summary>
+        public static BcfReadResult Read(ZipArchive archive)
+        {
+            if (archive == null) throw new ArgumentNullException(nameof(archive));
+
+            var result = new BcfReadResult();
+
+            ReadVersion(archive, result);
+            ReadProject(archive, result);
+
+            foreach (ZipArchiveEntry entry in archive.Entries)
+            {
+                if (!IsMarkup(entry.FullName)) continue;
+
+                try
                 {
-                    if (!IsMarkup(entry.FullName)) continue;
-
-                    try
-                    {
-                        BcfTopic topic = ReadMarkup(entry, archive, result);
-                        if (topic != null) result.Topics.Add(topic);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Один битый топик не должен обрушить чтение всего архива
-                        result.Warn("Не удалось прочитать '" + entry.FullName + "': " + ex.Message);
-                    }
+                    BcfTopic topic = ReadMarkup(entry, archive, result);
+                    if (topic != null) result.Topics.Add(topic);
+                }
+                catch (Exception ex)
+                {
+                    // Один битый топик не должен обрушить чтение всего архива
+                    result.Warn("Не удалось прочитать '" + entry.FullName + "': " + ex.Message);
                 }
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Быстрый взгляд на архив: версия и число замечаний, без разбора
+        /// markup. Диалогу нужно показать, что лежит в выбранном файле,
+        /// и делать ради этого полный разбор пяти тысяч замечаний незачем.
+        /// </summary>
+        public static BcfArchiveSummary Peek(Stream archiveStream)
+        {
+            if (archiveStream == null) throw new ArgumentNullException(nameof(archiveStream));
+
+            var summary = new BcfArchiveSummary();
+
+            using (var archive = new ZipArchive(archiveStream, ZipArchiveMode.Read, leaveOpen: true))
+            {
+                var result = new BcfReadResult();
+                ReadVersion(archive, result);
+
+                summary.Version = result.Version;
+                summary.HasVersionFile = Find(archive, BcfEntryNames.Version) != null;
+
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    if (IsMarkup(entry.FullName)) summary.TopicCount++;
+                }
+            }
+
+            return summary;
         }
 
         private static bool IsMarkup(string entryName)
@@ -179,8 +219,51 @@ namespace Bcf.Core.Serialization
             ReadComments(topic, markup, topicElement, result);
             ReadViewpoints(topic, markup, topicElement, archive, entry, result);
             CheckVocabulary(topic, result);
+            CollectUnsupported(topic, markup, topicElement);
 
             return topic;
+        }
+
+        /// <summary>Элементы markup, которых модель не хранит.</summary>
+        private static readonly HashSet<string> KnownTopicElements = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Title", "Priority", "Index", "Labels", "ReferenceLinks", "ReferenceLink",
+            "CreationDate", "CreationAuthor", "ModifiedDate", "ModifiedAuthor",
+            "DueDate", "AssignedTo", "Stage", "Description",
+            "Comments", "Viewpoints", "RelatedTopics"
+        };
+
+        private static readonly HashSet<string> KnownMarkupElements = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Header", "Topic", "Comment", "Viewpoints"
+        };
+
+        /// <summary>
+        /// Запоминает то, что модель не хранит: вложения, ссылки на документы,
+        /// фрагменты IFC. Перезаписать такое замечание значит молча лишить
+        /// пользователя его данных, поэтому обновление их не трогает.
+        /// </summary>
+        private static void CollectUnsupported(BcfTopic topic, XElement markup, XElement topicElement)
+        {
+            foreach (XElement child in topicElement.Elements())
+            {
+                string name = child.Name.LocalName;
+
+                if (KnownTopicElements.Contains(name)) continue;
+                if (topic.UnsupportedData.Contains(name)) continue;
+
+                topic.UnsupportedData.Add(name);
+            }
+
+            foreach (XElement child in markup.Elements())
+            {
+                string name = child.Name.LocalName;
+
+                if (KnownMarkupElements.Contains(name)) continue;
+                if (topic.UnsupportedData.Contains(name)) continue;
+
+                topic.UnsupportedData.Add(name);
+            }
         }
 
         private static void AddLabel(BcfTopic topic, string value)

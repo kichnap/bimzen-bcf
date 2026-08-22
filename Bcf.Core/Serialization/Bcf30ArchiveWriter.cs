@@ -47,11 +47,11 @@ namespace Bcf.Core.Serialization
             writer.WriteEndElement();
         }
 
-        protected override void WriteExtensions(IReadOnlyList<string> users)
+        protected override void WriteExtensions(IReadOnlyList<string> users, BcfExtraVocabulary extra)
         {
             using (Stream stream = CreateEntry(ExtensionsWriter.Bcf30FileName, CompressionLevel.Optimal))
             {
-                ExtensionsWriter.Write30(stream, users);
+                ExtensionsWriter.Write30(stream, users, extra);
             }
         }
 

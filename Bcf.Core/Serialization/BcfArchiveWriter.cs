@@ -26,6 +26,8 @@ namespace Bcf.Core.Serialization
     {
         private readonly ZipArchive _archive;
         private readonly List<string> _users = new List<string>();
+        private readonly BcfExtraVocabulary _extraVocabulary = new BcfExtraVocabulary();
+        private readonly HashSet<string> _entryNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _completed;
 
         protected BcfArchiveWriter(Stream destination, BcfWriteOptions options)
@@ -101,6 +103,64 @@ namespace Bcf.Core.Serialization
         }
 
         /// <summary>
+        /// Переносит запись чужого архива как есть.
+        ///
+        /// При обновлении существующего файла замечания, которых выгрузка
+        /// не касалась, копируются побайтово, а не пересобираются из модели:
+        /// в них могут лежать вложения, ссылки на документы и точки зрения,
+        /// которых модель не хранит, и пересборка молча их потеряла бы.
+        /// </summary>
+        /// <returns>false, если имя записи не годится для архива BCF.</returns>
+        public bool CopyEntry(string entryName, Stream content)
+        {
+            if (content == null) throw new ArgumentNullException(nameof(content));
+            if (_completed) throw new InvalidOperationException("Архив уже закрыт вызовом Complete().");
+
+            try
+            {
+                BcfEntryNames.Validate(entryName);
+            }
+            catch (ArgumentException ex)
+            {
+                Report.Warn("Запись '" + entryName + "' не перенесена: " + ex.Message);
+                return false;
+            }
+
+            if (!_entryNames.Add(entryName))
+            {
+                Report.Warn("Запись '" + entryName + "' встретилась дважды, перенесена первая.");
+                return false;
+            }
+
+            // PNG и JPEG уже сжаты — второй проход только тратит время
+            CompressionLevel level = IsAlreadyCompressed(entryName)
+                ? CompressionLevel.Fastest
+                : CompressionLevel.Optimal;
+
+            using (Stream target = CreateEntry(entryName, level))
+            {
+                content.CopyTo(target);
+            }
+
+            Report.EntriesCopied++;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Учитывает замечание, перенесённое из чужого архива: его участники
+        /// и его значения справочника должны попасть в extensions, иначе
+        /// файл объявляет меньше, чем содержит.
+        /// </summary>
+        public void RegisterCopiedTopic(BcfTopic topic)
+        {
+            if (topic == null) throw new ArgumentNullException(nameof(topic));
+
+            CollectUsers(topic);
+            CollectExtraVocabulary(topic);
+        }
+
+        /// <summary>
         /// Дописывает bcf.version, project.bcfp и справочники. После вызова
         /// топики добавлять нельзя.
         /// </summary>
@@ -110,7 +170,7 @@ namespace Bcf.Core.Serialization
 
             WriteXmlEntry(BcfEntryNames.Version, WriteVersionFile);
             WriteXmlEntry(BcfEntryNames.Project, WriteProjectFile);
-            WriteExtensions(NormalizedUsers());
+            WriteExtensions(NormalizedUsers(), _extraVocabulary);
 
             _completed = true;
         }
@@ -143,12 +203,15 @@ namespace Bcf.Core.Serialization
         protected abstract void WriteProjectFile(XmlWriter writer);
 
         /// <summary>Пишет объявление справочников: extensions.xml в 3.0, extensions.xsd в 2.1.</summary>
-        protected abstract void WriteExtensions(IReadOnlyList<string> users);
+        /// <param name="extra">Значения, приехавшие с перенесёнными замечаниями.</param>
+        protected abstract void WriteExtensions(IReadOnlyList<string> users, BcfExtraVocabulary extra);
 
         /// <summary>Создаёт запись архива и отдаёт поток для записи.</summary>
         protected Stream CreateEntry(string entryName, CompressionLevel compressionLevel)
         {
             BcfEntryNames.Validate(entryName);
+
+            _entryNames.Add(entryName);
 
             ZipArchiveEntry entry = _archive.CreateEntry(entryName, compressionLevel);
 
@@ -305,6 +368,26 @@ namespace Bcf.Core.Serialization
             foreach (string label in topic.Labels)
             {
                 BcfVocabulary.EnsureTopicLabel(label);
+            }
+        }
+
+        private static bool IsAlreadyCompressed(string entryName)
+        {
+            return entryName.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+                   || entryName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+                   || entryName.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void CollectExtraVocabulary(BcfTopic topic)
+        {
+            _extraVocabulary.AddTopicType(topic.TopicType);
+            _extraVocabulary.AddTopicStatus(topic.TopicStatus);
+            _extraVocabulary.AddPriority(topic.Priority);
+            _extraVocabulary.AddStage(topic.Stage);
+
+            foreach (string label in topic.Labels)
+            {
+                _extraVocabulary.AddTopicLabel(label);
             }
         }
 
