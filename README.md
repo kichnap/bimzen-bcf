@@ -10,6 +10,17 @@
 | Агент конвейера и коллизий (C#) | то же самое |
 | Онлайн-сервис (Node/TypeScript) | только `bcf-vocabularies/bcf-extensions.json` |
 
+## Встраивание в свой инструмент
+
+Библиотека собирается под `netstandard2.0`, не имеет внешних зависимостей
+и ничего не знает про хост. Что она берёт на себя, какие порты реализует
+встраивающий и на какие правила она опирается — [`docs/integration.md`](docs/integration.md).
+
+Машиночитаемое описание настроек выгрузки —
+[`schemas/api/bcf-export-settings.schema.json`](schemas/api/bcf-export-settings.schema.json).
+Схема сверяется с классом `BcfExportSettings` тестом на каждой сборке: поле,
+добавленное в код и забытое в схеме, роняет сборку.
+
 ## Состав
 
 ```
@@ -18,6 +29,8 @@ Bcf.Core.Tests/      xUnit, net48 + net8.0
 bcf-vocabularies/    канонический справочник значений — ЕДИНСТВЕННЫЙ источник правды
 schemas/3.0/         XSD из buildingSMART/BCF-XML, ветка release_3_0
 schemas/2.1/         XSD из buildingSMART/BCF-XML, ветка release_2_1
+schemas/api/         машиночитаемое описание настроек выгрузки
+docs/integration.md  договор на встраивание библиотеки в чужой инструмент
 test-data/           эталонные .bcfzip для тестов импорта
 ```
 

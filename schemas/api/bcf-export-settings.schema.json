@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.bimzen.ru/bcf/export-settings-1.json",
+  "title": "BcfExportSettings",
+  "description": "Настройки выгрузки коллизий в BCF — публичный договор библиотеки Bcf.Core. Имена полей совпадают со свойствами класса Bcf.Core.Clash.BcfExportSettings и с секцией BcfExport файла %APPDATA%/BIMzen/settings.json. Значения справочников (типы, статусы, приоритеты, метки, стадии) здесь намеренно не перечислены: их единственный источник — bcf-vocabularies/bcf-extensions.json, и дублировать их в схеме значит завести второй источник правды.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Version": {
+      "description": "Версия формата архива.",
+      "enum": ["Bcf30", "Bcf21"],
+      "default": "Bcf30"
+    },
+    "SelectedTestIds": {
+      "description": "Идентификаторы выгружаемых проверок Clash Detective. Пустой список — все проверки.",
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "IncludedClashStatuses": {
+      "description": "Статусы коллизий Clash Detective, которые попадают в выгрузку: New, Active, Reviewed, Approved, Resolved.",
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["New", "Active"]
+    },
+    "Grouping": {
+      "description": "Как коллизии складываются в замечания.",
+      "enum": ["GroupPerTopic", "ClashPerTopic", "LevelPerTopic"],
+      "default": "GroupPerTopic"
+    },
+    "IncludeSnapshots": {
+      "description": "Снимать ли изображения. Самая медленная часть выгрузки.",
+      "type": "boolean",
+      "default": true
+    },
+    "SnapshotWidth": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 800
+    },
+    "SnapshotHeight": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 600
+    },
+    "SnapshotMode": {
+      "description": "Custom — камера наводится на коллизию и окружение обрезается; Native — вид, как его отдаёт хост.",
+      "enum": ["Custom", "Native"],
+      "default": "Custom"
+    },
+    "SnapshotIsolation": {
+      "description": "Что делать с окружением коллизии в режиме Custom.",
+      "enum": [
+        "None",
+        "SectionBox",
+        "HideOthers",
+        "SectionBoxAndHideOthers",
+        "SectionBoxAndTransparentSurroundings"
+      ],
+      "default": "SectionBoxAndTransparentSurroundings"
+    },
+    "SnapshotBoxMarginMeters": {
+      "description": "Поле вокруг габаритов коллизии при обрезке, метры.",
+      "type": "number",
+      "minimum": 0,
+      "default": 2.5
+    },
+    "SnapshotTimeBudgetSeconds": {
+      "description": "Бюджет времени на отрисовку одного кадра. Без него кадр возвращается раньше, чем загрузилась геометрия.",
+      "type": "number",
+      "minimum": 0,
+      "default": 5.0
+    },
+    "SnapshotIncludeOverlay": {
+      "description": "Рисовать ли подсветку выделенных элементов.",
+      "type": "boolean",
+      "default": true
+    },
+    "MaxSnapshots": {
+      "description": "Предел числа снимков. Ноль — без ограничения.",
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "StatusMapping": {
+      "description": "Переопределения таблицы статусов: статус Clash Detective -> статус BCF. Пусто — умолчания справочника.",
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "default": {}
+    },
+    "TopicType": {
+      "description": "Тип замечаний из коллизий. Значение из справочника TopicTypes.",
+      "type": "string",
+      "default": "Clash"
+    },
+    "Priority": {
+      "description": "Приоритет замечаний. Значение из справочника Priorities.",
+      "type": "string"
+    },
+    "Stage": {
+      "description": "Стадия. Значение из справочника Stages.",
+      "type": "string"
+    },
+    "Labels": {
+      "description": "Метки на каждое замечание. Значения из справочника TopicLabels. На замечания из сохранённых видов метка Auto не ставится.",
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["Auto"]
+    },
+    "DisciplineLabelRules": {
+      "description": "Правила метки дисциплины: подстрока в имени проверки -> метка. Пусто — метки дисциплины нет: имена проверок у каждого заказчика свои, и угадывать их нельзя.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["Substring", "Label"],
+        "properties": {
+          "Substring": {
+            "description": "Подстрока в имени проверки. Сравнение без учёта регистра.",
+            "type": "string"
+          },
+          "Label": {
+            "description": "Метка из справочника TopicLabels.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Author": {
+      "description": "Автор замечаний — email. Пусто — хост подставляет адрес учётной записи.",
+      "type": "string"
+    },
+    "CarryAssignedTo": {
+      "description": "Переносить ли Assigned To из Clash Detective.",
+      "type": "boolean",
+      "default": true
+    },
+    "IncludeComments": {
+      "type": "boolean",
+      "default": true
+    },
+    "IncludeDistance": {
+      "description": "Включать ли расстояние и глубину проникновения в описание.",
+      "type": "boolean",
+      "default": true
+    },
+    "IncludeElementPaths": {
+      "description": "Включать ли пути элементов в дереве модели в описание.",
+      "type": "boolean",
+      "default": true
+    },
+    "IncludeSavedViewpoints": {
+      "description": "Выгружать ли сохранённые виды как отдельные замечания — то, что не описывается логикой коллизий.",
+      "type": "boolean",
+      "default": false
+    },
+    "SelectedViewpointIds": {
+      "description": "Идентификаторы выгружаемых видов. Пустой список — все.",
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "SavedViewpointTopicType": {
+      "description": "Тип замечаний из сохранённых видов. По умолчанию Issue, а не Clash: это ручное замечание.",
+      "type": "string",
+      "default": "Issue"
+    },
+    "ProjectName": {
+      "type": "string"
+    },
+    "ProjectId": {
+      "description": "Идентификатор проекта для project.bcfp. Пусто — выводится хостом из пути документа.",
+      "type": "string"
+    },
+    "OutputPath": {
+      "description": "Куда пишется архив. В файле задания перекрывается полем output.",
+      "type": "string"
+    },
+    "UpdateMode": {
+      "description": "Что делать, если файл выгрузки уже существует.",
+      "enum": ["Overwrite", "AppendNew", "UpdateAndAppend"],
+      "default": "Overwrite"
+    },
+    "KeepReceiverChanges": {
+      "description": "Сохранять ли при обновлении статус, исполнителя и срок, изменённые в приёмнике.",
+      "type": "boolean",
+      "default": true
+    },
+    "ExportTime": {
+      "description": "Время выгрузки: попадает в CreationDate замечаний и в метки времени записей архива. Не задано — текущий момент. Задают ради воспроизводимости.",
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  }
+}
