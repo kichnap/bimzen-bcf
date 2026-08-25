@@ -130,6 +130,32 @@ namespace Bcf.Core.Clash
         /// <summary>Автор замечаний — email.</summary>
         public string Author { get; set; }
 
+        /// <summary>
+        /// Добавлять ли в групповое замечание точку зрения на каждую коллизию
+        /// группы. Плоский список компонентов пары не сохраняет — элемент,
+        /// участвующий в трёх коллизиях, лежит в нём один раз, — а точка зрения
+        /// сохраняет: в ней ровно два компонента одной коллизии.
+        ///
+        /// Снимок у таких точек зрения не снимается: он стоит секунду на кадр,
+        /// а сама точка зрения — пара килобайт XML.
+        /// </summary>
+        public bool ViewpointPerClash { get; set; } = true;
+
+        /// <summary>
+        /// Связывать ли через RelatedTopics замечания, попавшие в одну группу
+        /// Clash Detective. Имеет смысл в режиме «замечание на коллизию»:
+        /// принадлежность к группе иначе выражается только текстом описания.
+        /// </summary>
+        public bool LinkGroupTopics { get; set; } = true;
+
+        /// <summary>
+        /// Ставить ли имя группы меткой замечания. По умолчанию нет: метки
+        /// в приёмнике — фильтры, и триста осей превращают фильтр в свалку.
+        /// Включают, когда фильтровать по группе нужно именно в приёмнике;
+        /// значения при этом объявляются в справочнике архива.
+        /// </summary>
+        public bool GroupNameAsLabel { get; set; }
+
         /// <summary>Переносить ли Assigned To из Clash Detective.</summary>
         public bool CarryAssignedTo { get; set; } = true;
 
@@ -213,6 +239,9 @@ namespace Bcf.Core.Clash
                 Labels = new List<string>(Labels),
                 DisciplineLabelRules = new List<DisciplineLabelRule>(DisciplineLabelRules),
                 Author = Author,
+                ViewpointPerClash = ViewpointPerClash,
+                LinkGroupTopics = LinkGroupTopics,
+                GroupNameAsLabel = GroupNameAsLabel,
                 CarryAssignedTo = CarryAssignedTo,
                 IncludeComments = IncludeComments,
                 IncludeDistance = IncludeDistance,

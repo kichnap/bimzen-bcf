@@ -228,6 +228,20 @@ namespace Bcf.Core.Clash
         {
             BcfTopic existing = _existing == null ? null : _existing.Find(topic.Guid);
 
+            if (existing != null && HasForeignViewpoints(existing, topic))
+            {
+                // Точку зрения, добавленную в приёмнике, перезапись потеряла бы
+                if (_existing.CopyTopic(topic.Guid, writer))
+                {
+                    result.TopicsKept++;
+                    result.Warn(
+                        "Замечание «" + existing.Title + "» перенесено без изменений: " +
+                        "в нём есть точки зрения из приёмника, которых выгрузка не хранит.");
+
+                    return;
+                }
+            }
+
             if (existing != null)
             {
                 Merge(topic, existing, settings);
@@ -264,7 +278,7 @@ namespace Bcf.Core.Clash
 
             string foreign = settings.UpdateMode == BcfUpdateMode.AppendNew
                 ? null
-                : ForeignData(existing, topicGuid);
+                : ForeignData(existing);
 
             if (settings.UpdateMode == BcfUpdateMode.UpdateAndAppend && foreign == null) return false;
 
@@ -286,22 +300,35 @@ namespace Bcf.Core.Clash
         /// Чужие данные замечания, которых наша модель не хранит. Null —
         /// замечание можно переписать без потерь.
         /// </summary>
-        private static string ForeignData(BcfTopic existing, Guid topicGuid)
+        private static string ForeignData(BcfTopic existing)
         {
-            if (existing.UnsupportedData.Count > 0)
-            {
-                return string.Join(", ", Enumerable.ToArray(existing.UnsupportedData));
-            }
+            return existing.UnsupportedData.Count > 0
+                ? string.Join(", ", Enumerable.ToArray(existing.UnsupportedData))
+                : null;
+        }
 
-            Guid ours = ViewpointGuidFor(topicGuid);
+        /// <summary>
+        /// Есть ли в существующем замечании точки зрения, которых нет у нас.
+        ///
+        /// Проверяется после сборки замечания, а не до: своих точек зрения
+        /// может быть много — по одной на каждую коллизию группы, — и их
+        /// идентификаторы известны только когда группа уже разобрана.
+        /// </summary>
+        private static bool HasForeignViewpoints(BcfTopic existing, BcfTopic fresh)
+        {
+            var ours = new HashSet<Guid>();
+
+            foreach (BcfViewpoint viewpoint in fresh.Viewpoints)
+            {
+                ours.Add(viewpoint.Guid);
+            }
 
             foreach (BcfViewpoint viewpoint in existing.Viewpoints)
             {
-                // Точку зрения, добавленную в приёмнике, мы бы заменили своей
-                if (viewpoint.Guid != ours && viewpoint.Guid != Guid.Empty) return "точки зрения из приёмника";
+                if (viewpoint.Guid != Guid.Empty && !ours.Contains(viewpoint.Guid)) return true;
             }
 
-            return null;
+            return false;
         }
 
         /// <summary>
@@ -372,11 +399,17 @@ namespace Bcf.Core.Clash
             }
         }
 
-        /// <summary>Идентификатор нашей точки зрения — он выводится из замечания.</summary>
-        private static Guid ViewpointGuidFor(Guid topicGuid)
+        /// <summary>
+        /// Идентификатор нашей точки зрения — он выводится из замечания
+        /// и, для точек зрения на отдельные коллизии, из ключа коллизии.
+        /// </summary>
+        private static Guid ViewpointGuidFor(Guid topicGuid, string discriminator = null)
         {
-            return StableTopicKey.ToTopicGuid(
-                StableTopicKey.Compute(new[] { "viewpoint", topicGuid.ToString("D") }));
+            string[] parts = string.IsNullOrEmpty(discriminator)
+                ? new[] { "viewpoint", topicGuid.ToString("D") }
+                : new[] { "viewpoint", topicGuid.ToString("D"), discriminator };
+
+            return StableTopicKey.ToTopicGuid(StableTopicKey.Compute(parts));
         }
 
         /// <summary>
@@ -507,7 +540,7 @@ namespace Bcf.Core.Clash
 
             return new BcfViewpoint
             {
-                Guid = StableTopicKey.ToTopicGuid(StableTopicKey.Compute(new[] { "viewpoint", topicGuid.ToString("D") })),
+                Guid = ViewpointGuidFor(topicGuid),
                 Camera = data.Camera,
                 Snapshot = data.Snapshot,
                 Index = 0,
@@ -551,6 +584,10 @@ namespace Bcf.Core.Clash
             var groups = new Dictionary<string, List<ClashItem>>(StringComparer.Ordinal);
             var order = new List<string>();
 
+            // Якоря групп: первое замечание группы, на которое ссылаются
+            // остальные. Живут в пределах проверки — группы тоже
+            var groupAnchors = new Dictionary<string, Guid>(StringComparer.Ordinal);
+
             foreach (ClashItem clash in _source.EnumerateClashes(test, cancellationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -570,10 +607,11 @@ namespace Bcf.Core.Clash
                 if (settings.Grouping == ClashGroupingMode.ClashPerTopic)
                 {
                     WriteTopic(
-                        StableTopicKey.ForClash(clash.TestName, clash.Elements.Select(e => e.IfcGuid ?? e.ElementId)),
+                        ClashKey(clash),
+                        null,
                         ClashTitle(clash),
                         new List<ClashItem> { clash },
-                        builder, writer, settings, snapshot, result, state, cancellationToken);
+                        builder, writer, settings, snapshot, result, state, groupAnchors, cancellationToken);
                 }
                 else
                 {
@@ -599,11 +637,22 @@ namespace Bcf.Core.Clash
 
                 List<ClashItem> items = groups[bucket];
 
+                // Коллизия, не попавшая ни в одну группу, — сама себе группа,
+                // и «имя группы» у неё это имя коллизии вида «Столкновение123».
+                // Такие имена Navisworks раздаёт заново при пересоздании
+                // проверки, поэтому ключ для них считается по элементам:
+                // иначе замечание теряет себя ровно там, где его ищут
+                bool grouped = !string.IsNullOrWhiteSpace(items[0].GroupName);
+
+                string key = grouped ? StableTopicKey.ForGroup(test.Name, bucket) : ClashKey(items[0]);
+                string legacyKey = grouped ? null : StableTopicKey.ForGroup(test.Name, bucket);
+
                 WriteTopic(
-                    StableTopicKey.ForGroup(test.Name, bucket),
+                    key,
+                    legacyKey,
                     bucket + " — " + test.Name,
                     items,
-                    builder, writer, settings, snapshot, result, state, cancellationToken);
+                    builder, writer, settings, snapshot, result, state, groupAnchors, cancellationToken);
             }
 
             Report(progress, state);
@@ -611,6 +660,7 @@ namespace Bcf.Core.Clash
 
         private void WriteTopic(
             string key,
+            string legacyKey,
             string title,
             List<ClashItem> clashes,
             ClashTopicBuilder builder,
@@ -619,21 +669,33 @@ namespace Bcf.Core.Clash
             SnapshotRequest snapshot,
             BcfExportResult result,
             BcfExportProgress state,
+            Dictionary<string, Guid> groupAnchors,
             CancellationToken cancellationToken)
         {
             try
             {
-                Guid topicGuid = ResolveTopicGuid(key, result);
+                Guid topicGuid = ResolveTopicGuid(key, legacyKey, result);
 
                 // Решение принимается до снятия кадра: рисовать снимок,
                 // который тут же будет выброшен, — самая дорогая ошибка,
                 // какую может допустить повторная выгрузка
                 if (KeepExisting(topicGuid, writer, settings, result)) return;
 
+                if (settings.GroupNameAsLabel && !string.IsNullOrWhiteSpace(clashes[0].GroupName))
+                {
+                    // Имя группы не из справочника, и файл обязан объявить его
+                    // сам — иначе строгая проверка не пропустит запись
+                    writer.DeclareLabel(clashes[0].GroupName.Trim());
+                }
+
                 BcfTopic topic = builder.Build(key, topicGuid, title, clashes);
+
+                LinkToGroup(topic, clashes, settings, groupAnchors);
 
                 BcfViewpoint viewpoint = CreateViewpoint(topic.Guid, clashes, snapshot, result, cancellationToken);
                 if (viewpoint != null) topic.Viewpoints.Add(viewpoint);
+
+                AddClashViewpoints(topic, clashes, settings, snapshot, result, cancellationToken);
 
                 Emit(writer, topic, settings, result, state);
             }
@@ -651,6 +713,91 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// Ключ коллизии — имя проверки и идентификаторы её элементов.
+        /// Ни имени коллизии, ни её номера: их Navisworks раздаёт заново.
+        /// </summary>
+        private static string ClashKey(ClashItem clash)
+        {
+            return StableTopicKey.ForClash(clash.TestName, clash.Elements.Select(e => e.IfcGuid ?? e.ElementId));
+        }
+
+        /// <summary>
+        /// Связывает поштучные замечания одной группы через RelatedTopics.
+        ///
+        /// Связь односторонняя, звездой на первое замечание группы: архив
+        /// пишется потоком, и когда приходит второе, первое уже записано.
+        /// Обратная ссылка стоила бы держать все замечания в памяти до конца
+        /// выгрузки — цена, несоразмерная удобству.
+        /// </summary>
+        private static void LinkToGroup(
+            BcfTopic topic,
+            List<ClashItem> clashes,
+            BcfExportSettings settings,
+            Dictionary<string, Guid> groupAnchors)
+        {
+            if (!settings.LinkGroupTopics || groupAnchors == null) return;
+            if (clashes.Count != 1) return;
+
+            string group = clashes[0].GroupName;
+            if (string.IsNullOrWhiteSpace(group)) return;
+
+            Guid anchor;
+
+            if (!groupAnchors.TryGetValue(group, out anchor))
+            {
+                groupAnchors.Add(group, topic.Guid);
+                return;
+            }
+
+            if (anchor != topic.Guid && !topic.RelatedTopics.Contains(anchor)) topic.RelatedTopics.Add(anchor);
+        }
+
+        /// <summary>
+        /// Добавляет точку зрения на каждую коллизию группы.
+        ///
+        /// Это единственный способ сохранить пары: в плоском списке
+        /// компонентов замечания элемент, участвующий в трёх коллизиях,
+        /// лежит один раз, и разбить список обратно на пары нельзя даже
+        /// в теории. В точке зрения — ровно два компонента одной коллизии.
+        ///
+        /// Снимки здесь не снимаются: секунда на кадр против пары килобайт
+        /// XML — разница, из-за которой выгрузка группы из шестидесяти
+        /// коллизий превратилась бы в минуту работы и десяток мегабайт.
+        /// </summary>
+        private void AddClashViewpoints(
+            BcfTopic topic,
+            List<ClashItem> clashes,
+            BcfExportSettings settings,
+            SnapshotRequest snapshot,
+            BcfExportResult result,
+            CancellationToken cancellationToken)
+        {
+            if (!settings.ViewpointPerClash || clashes.Count < 2) return;
+
+            SnapshotRequest request = WithoutSnapshot(snapshot);
+            int index = 1;
+
+            foreach (ClashItem clash in clashes)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                BcfViewpoint viewpoint = CreateViewpoint(
+                    topic.Guid,
+                    new List<ClashItem> { clash },
+                    request,
+                    result,
+                    cancellationToken,
+                    ClashKey(clash),
+                    index);
+
+                if (viewpoint == null) continue;
+
+                topic.Viewpoints.Add(viewpoint);
+                index++;
+            }
+        }
+
+        /// <summary>
         /// Идентификатор замечания: ранее выданный, если он известен, иначе
         /// детерминированный из ключа. Первое важнее второго — на сервере
         /// у топика может оказаться свой Guid, и повторная выгрузка обязана
@@ -658,11 +805,30 @@ namespace Bcf.Core.Clash
         /// </summary>
         private Guid ResolveTopicGuid(string key, BcfExportResult result)
         {
+            return ResolveTopicGuid(key, null, result);
+        }
+
+        /// <param name="legacyKey">
+        /// Ключ, которым это замечание считалось в прежних версиях. Если
+        /// идентификатор выдан на него, он переносится на новый ключ: смена
+        /// правила счёта не должна оборачиваться полным комплектом дублей
+        /// в приёмнике.
+        /// </param>
+        private Guid ResolveTopicGuid(string key, string legacyKey, BcfExportResult result)
+        {
             Guid guid;
 
             if (_topicGuids.TryGet(key, out guid))
             {
                 result.TopicsReused++;
+                return guid;
+            }
+
+            if (!string.IsNullOrEmpty(legacyKey) && _topicGuids.TryGet(legacyKey, out guid))
+            {
+                _topicGuids.Remember(key, guid);
+                result.TopicsReused++;
+
                 return guid;
             }
 
@@ -677,7 +843,9 @@ namespace Bcf.Core.Clash
             List<ClashItem> clashes,
             SnapshotRequest snapshot,
             BcfExportResult result,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            string discriminator = null,
+            int index = 0)
         {
             ClashItem source = clashes[0];
 
@@ -711,10 +879,10 @@ namespace Bcf.Core.Clash
             {
                 // Идентификатор точки зрения выводится из идентификатора замечания:
                 // при повторной выгрузке он должен получиться тем же
-                Guid = StableTopicKey.ToTopicGuid(StableTopicKey.Compute(new[] { "viewpoint", topicGuid.ToString("D") })),
+                Guid = ViewpointGuidFor(topicGuid, discriminator),
                 Camera = data.Camera,
                 Snapshot = data.Snapshot,
-                Index = 0
+                Index = index
             };
 
             if (data.Snapshot != null && data.Snapshot.Length > 0)

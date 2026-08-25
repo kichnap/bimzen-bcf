@@ -28,6 +28,7 @@ namespace Bcf.Core.Serialization
         private readonly List<string> _users = new List<string>();
         private readonly BcfExtraVocabulary _extraVocabulary = new BcfExtraVocabulary();
         private readonly HashSet<string> _entryNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _declaredLabels = new HashSet<string>(StringComparer.Ordinal);
         private bool _completed;
 
         protected BcfArchiveWriter(Stream destination, BcfWriteOptions options)
@@ -145,6 +146,22 @@ namespace Bcf.Core.Serialization
             Report.EntriesCopied++;
 
             return true;
+        }
+
+        /// <summary>
+        /// Объявляет метку, которой нет в справочнике.
+        ///
+        /// Нужно для меток-идентификаторов — имён групп коллизий: строгая
+        /// проверка их бы не пропустила, а файл обязан объявлять всё, что
+        /// в нём есть. Объявление узкое и намеренное: сюда попадает только
+        /// то, что вызывающий назвал явно, а не любая строка из топика.
+        /// </summary>
+        public void DeclareLabel(string label)
+        {
+            if (string.IsNullOrWhiteSpace(label)) return;
+
+            _declaredLabels.Add(label.Trim());
+            _extraVocabulary.AddTopicLabel(label);
         }
 
         /// <summary>
@@ -367,6 +384,8 @@ namespace Bcf.Core.Serialization
 
             foreach (string label in topic.Labels)
             {
+                if (_declaredLabels.Contains(label)) continue;
+
                 BcfVocabulary.EnsureTopicLabel(label);
             }
         }

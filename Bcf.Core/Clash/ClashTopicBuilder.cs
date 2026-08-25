@@ -261,6 +261,13 @@ namespace Bcf.Core.Clash
                 if (!string.IsNullOrWhiteSpace(label)) yield return label;
             }
 
+            // Имя группы меткой: значение объявляет экспортёр, здесь оно просто
+            // добавляется к остальным
+            if (_settings.GroupNameAsLabel && !string.IsNullOrWhiteSpace(clash.GroupName))
+            {
+                yield return clash.GroupName.Trim();
+            }
+
             // Метка дисциплины выводится из имени теста по заданным правилам.
             // Правил нет — метки нет: у каждого заказчика свои имена проверок,
             // и угадывать их значит ставить неверную метку молча.
@@ -323,6 +330,10 @@ namespace Bcf.Core.Clash
             {
                 sb.Append("Коллизия: ").AppendLine(first.DisplayName);
             }
+
+            // Имя группы нужно и поштучным замечаниям: без него принадлежность
+            // к группе теряется совсем, а по ней строят отбор на той стороне
+            if (!string.IsNullOrWhiteSpace(first.GroupName)) sb.Append("Группа: ").AppendLine(first.GroupName);
 
             if (!string.IsNullOrWhiteSpace(first.LevelName)) sb.Append("Уровень: ").AppendLine(first.LevelName);
             if (!string.IsNullOrWhiteSpace(first.GridLocation)) sb.Append("Оси: ").AppendLine(first.GridLocation);
