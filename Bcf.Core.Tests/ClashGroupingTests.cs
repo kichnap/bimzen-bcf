@@ -148,6 +148,32 @@ namespace Bcf.Core.Tests
         }
 
         [Fact]
+        public void SamePairTwice_GivesTwoTopics()
+        {
+            // Труба пересекает стену дважды: пара элементов одна, а замечания
+            // должны быть разными — иначе второе затрёт первое в архиве
+            ClashItem first = Clash(null, "стена-1", "труба-1");
+            ClashItem second = Clash(null, "стена-1", "труба-1");
+
+            BcfReadResult read = ReadBack(Settings(), new FakeSource(first, second));
+
+            Assert.Equal(2, read.Topics.Count);
+            Assert.Equal(2, read.Topics.Select(t => t.Guid).Distinct().Count());
+        }
+
+        [Fact]
+        public void RepeatedPairKeys_AreStableBetweenExports()
+        {
+            ClashItem first = Clash(null, "стена-1", "труба-1");
+            ClashItem second = Clash(null, "стена-1", "труба-1");
+
+            IEnumerable<Guid> before = ReadBack(Settings(), new FakeSource(first, second)).Topics.Select(t => t.Guid);
+            IEnumerable<Guid> after = ReadBack(Settings(), new FakeSource(first, second)).Topics.Select(t => t.Guid);
+
+            Assert.Equal(before.OrderBy(g => g), after.OrderBy(g => g));
+        }
+
+        [Fact]
         public void GroupName_ReachesTheDescription()
         {
             BcfExportSettings settings = Settings();

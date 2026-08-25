@@ -30,6 +30,14 @@ namespace Bcf.Core.Clash
         /// <summary>Обновляемый архив; null — выгрузка пишет файл с нуля.</summary>
         private ExistingBcfArchive _existing;
 
+        /// <summary>
+        /// Ключи, уже выданные в этой выгрузке. Одна и та же пара элементов
+        /// сталкивается дважды чаще, чем кажется: на живой проверке из 1391
+        /// замечания таких оказалось 26. Без учёта повторов оба замечания
+        /// получили бы один идентификатор и одну папку в архиве.
+        /// </summary>
+        private readonly HashSet<string> _usedKeys = new HashSet<string>(StringComparer.Ordinal);
+
         /// <param name="source">Источник коллизий.</param>
         /// <param name="topicGuids">
         /// Карта ранее выданных идентификаторов. Без неё каждая выгрузка
@@ -607,7 +615,7 @@ namespace Bcf.Core.Clash
                 if (settings.Grouping == ClashGroupingMode.ClashPerTopic)
                 {
                     WriteTopic(
-                        ClashKey(clash),
+                        Unique(ClashKey(clash)),
                         null,
                         ClashTitle(clash),
                         new List<ClashItem> { clash },
@@ -644,7 +652,7 @@ namespace Bcf.Core.Clash
                 // иначе замечание теряет себя ровно там, где его ищут
                 bool grouped = !string.IsNullOrWhiteSpace(items[0].GroupName);
 
-                string key = grouped ? StableTopicKey.ForGroup(test.Name, bucket) : ClashKey(items[0]);
+                string key = Unique(grouped ? StableTopicKey.ForGroup(test.Name, bucket) : ClashKey(items[0]));
                 string legacyKey = grouped ? null : StableTopicKey.ForGroup(test.Name, bucket);
 
                 WriteTopic(
@@ -709,6 +717,27 @@ namespace Bcf.Core.Clash
                 // записываем в отчёт, пропускаем, идём дальше
                 result.ClashesSkippedByError++;
                 result.Warn("Замечание '" + title + "' пропущено: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Разводит ключи, совпавшие в пределах одной выгрузки.
+        ///
+        /// Две коллизии между одной и той же парой элементов — обычное дело:
+        /// труба пересекает стену дважды. Ключ у них один, а замечания должны
+        /// быть разными, иначе второе затрёт первое прямо в архиве.
+        /// Порядок обхода Navisworks устойчив, поэтому и номер повтора
+        /// устойчив от выгрузки к выгрузке.
+        /// </summary>
+        private string Unique(string key)
+        {
+            if (_usedKeys.Add(key)) return key;
+
+            for (int occurrence = 2; ; occurrence++)
+            {
+                string candidate = key + "#" + occurrence.ToString(CultureInfo.InvariantCulture);
+
+                if (_usedKeys.Add(candidate)) return candidate;
             }
         }
 
