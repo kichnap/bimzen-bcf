@@ -174,6 +174,32 @@ namespace Bcf.Core.Tests
         }
 
         [Fact]
+        public void ElementIdSources_AreCounted()
+        {
+            // Потребитель сверяет свои данные с нашими по числовому
+            // идентификатору, а у составного элемента номер геометрии
+            // и номер элемента разные. Счётчик показывает, который в файле
+            ClashItem clash = Clash(null, "стена-1", "труба-1");
+            clash.Elements[0].ElementIdSource = "LcRevitId/LcOaNat64AttributeValue@1";
+            clash.Elements[1].ElementIdSource = "LcRevitId/LcOaNat64AttributeValue@0";
+
+            BcfExportResult result = Export(Settings(), new FakeSource(clash));
+
+            Assert.Equal(1, result.ElementIdSources["LcRevitId/LcOaNat64AttributeValue@1"]);
+            Assert.Equal(1, result.ElementIdSources["LcRevitId/LcOaNat64AttributeValue@0"]);
+        }
+
+        [Fact]
+        public void ElementsWithoutIdSource_AreCountedSeparately()
+        {
+            ClashItem clash = Clash(null, "стена-1", "труба-1");
+
+            BcfExportResult result = Export(Settings(), new FakeSource(clash));
+
+            Assert.Equal(2, result.ElementIdSources["не найден"]);
+        }
+
+        [Fact]
         public void GroupName_ReachesTheDescription()
         {
             BcfExportSettings settings = Settings();

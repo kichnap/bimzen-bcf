@@ -612,6 +612,8 @@ namespace Bcf.Core.Clash
                 result.ClashesProcessed++;
                 result.ElementsWithoutGuid += clash.Elements.Count(e => e.Origin == ElementIdOrigin.None);
 
+                CountIdSources(clash, result);
+
                 if (settings.Grouping == ClashGroupingMode.ClashPerTopic)
                 {
                     WriteTopic(
@@ -717,6 +719,23 @@ namespace Bcf.Core.Clash
                 // записываем в отчёт, пропускаем, идём дальше
                 result.ClashesSkippedByError++;
                 result.Warn("Замечание '" + title + "' пропущено: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Копит статистику по тому, откуда брались числовые идентификаторы.
+        /// </summary>
+        private static void CountIdSources(ClashItem clash, BcfExportResult result)
+        {
+            foreach (ClashElementInfo element in clash.Elements)
+            {
+                string source = string.IsNullOrWhiteSpace(element.ElementIdSource)
+                    ? "не найден"
+                    : element.ElementIdSource;
+
+                int count;
+                result.ElementIdSources.TryGetValue(source, out count);
+                result.ElementIdSources[source] = count + 1;
             }
         }
 

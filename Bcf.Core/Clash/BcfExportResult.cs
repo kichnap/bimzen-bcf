@@ -60,6 +60,17 @@ namespace Bcf.Core.Clash
         /// </summary>
         public int ElementsWithoutGuid { get; internal set; }
 
+        /// <summary>
+        /// Откуда брались числовые идентификаторы элементов и сколько раз.
+        /// Ключ — свойство и уровень («LcRevitId/LcOaNat64AttributeValue@1»),
+        /// значение — число элементов.
+        ///
+        /// По этому счётчику видно, что на новой модели обход свойств пошёл
+        /// иначе, чем на прежних, — до того, как это заметит потребитель
+        /// выгрузки на своей стороне.
+        /// </summary>
+        public IDictionary<string, int> ElementIdSources { get; } = new Dictionary<string, int>(StringComparer.Ordinal);
+
         public int SnapshotsCaptured { get; internal set; }
 
         /// <summary>
