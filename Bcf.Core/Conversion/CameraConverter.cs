@@ -5,49 +5,78 @@ using Bcf.Core.Model;
 namespace Bcf.Core.Conversion
 {
     /// <summary>
-    /// Камера Navisworks в камеру BCF.
+    /// A host camera turned into a BCF camera.
     ///
-    /// Место, где ошибка не видна на выходе и проявляется только у координатора:
-    /// вид открывается «в пустоту». Поэтому здесь три вещи держатся явно —
-    /// базовая ориентация камеры, нормировка векторов и единицы.
+    /// This is the place where a mistake is invisible in the output and shows
+    /// up only at the coordinator's desk: the view opens onto nothing. That is
+    /// why three things are stated explicitly here — the base orientation of
+    /// the camera, the normalisation of the vectors, and the units.
+    ///
+    /// Камера хоста, превращённая в камеру BCF.
+    ///
+    /// Это место, где ошибка не видна на выходе и проявляется только
+    /// у координатора: вид открывается «в пустоту». Поэтому здесь явно
+    /// держатся три вещи — базовая ориентация камеры, нормировка векторов
+    /// и единицы.
     /// </summary>
     public static class CameraConverter
     {
         /// <summary>
-        /// Куда смотрит камера Navisworks без поворота: вдоль −Z, «вверх» +Y.
-        /// Поворот вида (кватернион Rotation3D) применяется именно к этой паре.
+        /// Where a camera looks with no rotation applied: along −Z, with +Y up.
+        /// The rotation of a view — a quaternion — is applied to this pair.
+        ///
+        /// Куда смотрит камера без всякого поворота: вдоль −Z, «вверх» +Y.
+        /// Поворот вида — кватернион — применяется именно к этой паре.
         /// </summary>
         public static readonly Vector3 BaseDirection = new Vector3(0, 0, -1);
 
-        /// <summary>Базовое направление «вверх» камеры Navisworks.</summary>
+        /// <summary>
+        /// The base up direction of a camera.
+        /// Базовое направление «вверх» камеры.
+        /// </summary>
         public static readonly Vector3 BaseUpVector = new Vector3(0, 1, 0);
 
-        /// <summary>Минимальный угол обзора, допустимый схемой BCF 2.1.</summary>
+        /// <summary>
+        /// The smallest field of view the BCF 2.1 schema allows.
+        /// Минимальный угол обзора, допустимый схемой BCF 2.1.
+        /// </summary>
         public const double Bcf21MinFieldOfView = 45.0;
 
-        /// <summary>Максимальный угол обзора, допустимый схемой BCF 2.1.</summary>
+        /// <summary>
+        /// The largest field of view the BCF 2.1 schema allows.
+        /// Максимальный угол обзора, допустимый схемой BCF 2.1.
+        /// </summary>
         public const double Bcf21MaxFieldOfView = 60.0;
 
-        /// <summary>Направление взгляда из поворота вида.</summary>
+        /// <summary>
+        /// The viewing direction derived from the rotation of a view.
+        /// Направление взгляда, выведенное из поворота вида.
+        /// </summary>
+        /// <param name="rotation">The rotation of the view.</param>
         public static Vector3 GetDirection(Rotation rotation)
         {
             return rotation.Rotate(BaseDirection).Normalized();
         }
 
-        /// <summary>Направление «вверх» из поворота вида.</summary>
+        /// <summary>
+        /// The up direction derived from the rotation of a view.
+        /// Направление «вверх», выведенное из поворота вида.
+        /// </summary>
+        /// <param name="rotation">The rotation of the view.</param>
         public static Vector3 GetUpVector(Rotation rotation)
         {
             return rotation.Rotate(BaseUpVector).Normalized();
         }
 
         /// <summary>
+        /// A perspective camera.
         /// Перспективная камера.
         /// </summary>
-        /// <param name="position">Положение камеры во внутренних единицах документа.</param>
-        /// <param name="rotation">Поворот вида (Viewpoint.Rotation).</param>
-        /// <param name="verticalFieldOfViewRadians">Вертикальный угол обзора в радианах (Viewpoint.HeightField).</param>
-        /// <param name="aspectRatio">Отношение ширины вида к высоте.</param>
-        /// <param name="units">Единицы документа (Document.Units).</param>
+        /// <param name="position">The camera position in the internal units of the document.</param>
+        /// <param name="rotation">The rotation of the view.</param>
+        /// <param name="verticalFieldOfViewRadians">The vertical field of view, in radians.</param>
+        /// <param name="aspectRatio">The width of the view divided by its height.</param>
+        /// <param name="units">The units of the document.</param>
         public static BcfPerspectiveCamera ToPerspective(
             Vector3 position,
             Rotation rotation,
@@ -61,7 +90,7 @@ namespace Bcf.Core.Conversion
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(verticalFieldOfViewRadians), verticalFieldOfViewRadians,
-                    "Угол обзора должен быть в радианах и лежать в интервале (0; PI).");
+                    "The field of view must be in radians and lie within (0; PI).");
             }
 
             return new BcfPerspectiveCamera
@@ -75,13 +104,14 @@ namespace Bcf.Core.Conversion
         }
 
         /// <summary>
+        /// An orthogonal camera.
         /// Ортогональная камера.
         /// </summary>
-        /// <param name="position">Положение камеры во внутренних единицах документа.</param>
-        /// <param name="rotation">Поворот вида.</param>
-        /// <param name="verticalExtent">Видимая высота вида во внутренних единицах документа (Viewpoint.VerticalExtent).</param>
-        /// <param name="aspectRatio">Отношение ширины вида к высоте.</param>
-        /// <param name="units">Единицы документа.</param>
+        /// <param name="position">The camera position in the internal units of the document.</param>
+        /// <param name="rotation">The rotation of the view.</param>
+        /// <param name="verticalExtent">The visible height of the view, in the internal units of the document.</param>
+        /// <param name="aspectRatio">The width of the view divided by its height.</param>
+        /// <param name="units">The units of the document.</param>
         public static BcfOrthogonalCamera ToOrthogonal(
             Vector3 position,
             Rotation rotation,
@@ -94,7 +124,7 @@ namespace Bcf.Core.Conversion
             if (verticalExtent <= 0)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(verticalExtent), verticalExtent, "Высота ортогонального вида должна быть положительной.");
+                    nameof(verticalExtent), verticalExtent, "The height of an orthogonal view must be positive.");
             }
 
             return new BcfOrthogonalCamera
@@ -128,13 +158,25 @@ namespace Bcf.Core.Conversion
         }
 
         /// <summary>
-        /// Подгоняет угол обзора под ограничения схемы конкретной версии.
+        /// Fits the field of view into what the schema of a given version
+        /// allows.
         ///
-        /// В 2.1 схема разрешает только [45; 60] — реальный угол вида Navisworks
-        /// часто выходит за эти границы, и без подрезки файл не проходит
-        /// валидацию. Факт подрезки возвращается наружу: пользователь должен
-        /// знать, что в 2.1 вид отличается от исходного.
+        /// The 2.1 schema permits [45; 60] only. A real view angle often falls
+        /// outside those bounds, and without clamping the file fails
+        /// validation. The fact that clamping happened is returned to the
+        /// caller: the user has to know that the 2.1 view differs from the
+        /// original.
+        ///
+        /// Подгоняет угол обзора под то, что разрешает схема конкретной версии.
+        ///
+        /// Схема 2.1 допускает только [45; 60]. Настоящий угол вида часто
+        /// выходит за эти границы, и без подрезки файл не проходит проверку.
+        /// Факт подрезки возвращается наружу: пользователь должен знать, что
+        /// вид в 2.1 отличается от исходного.
         /// </summary>
+        /// <param name="degrees">The angle to fit, in degrees.</param>
+        /// <param name="version">The version whose limits apply.</param>
+        /// <param name="clamped">True when the value had to be changed.</param>
         public static double ClampFieldOfView(double degrees, BcfVersion version, out bool clamped)
         {
             double min, max;
@@ -146,8 +188,8 @@ namespace Bcf.Core.Conversion
             }
             else
             {
-                // В 3.0 границы открытые: (0; 180). Отступаем от них на волос,
-                // чтобы значение не совпало с исключённой границей.
+                // In 3.0 the bounds are open: (0; 180). We step a hair away from
+                // them so that the value never lands on an excluded bound
                 min = 0.001;
                 max = 179.999;
             }
@@ -174,7 +216,7 @@ namespace Bcf.Core.Conversion
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(aspectRatio), aspectRatio,
-                    "Отношение сторон вида должно быть положительным: в схеме 3.0 это PositiveDouble.");
+                    "The aspect ratio must be positive: the 3.0 schema declares it as PositiveDouble.");
             }
         }
     }

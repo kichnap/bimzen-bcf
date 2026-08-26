@@ -5,22 +5,39 @@ using System.Linq;
 namespace Bcf.Core.Vocabulary
 {
     /// <summary>
-    /// Подготовка списка пользователей для раздела Users в справочниках архива.
+    /// Preparing the list of users for the Users section of the vocabulary
+    /// declaration.
     ///
-    /// В BCF идентификатор пользователя — email. В Clash Detective поле
-    /// «Assigned To» — произвольный текст, туда пишут и «Иванов», и «ОВ»,
-    /// и пустоту. Такие значения остаются в поле AssignedTo топика как есть
-    /// (иначе потеряется информация), но в объявленный список Users не попадают:
-    /// он должен оставаться списком идентификаторов, а не свалкой подписей.
+    /// In BCF a user identifier is an email address. In a clash-detection tool
+    /// the "Assigned To" field is free text: people put a surname there, or a
+    /// discipline code, or nothing at all. Such values stay in the topic's
+    /// AssignedTo field exactly as they are — dropping them would lose
+    /// information — but they do not reach the declared Users list, which has
+    /// to remain a list of identifiers rather than a heap of captions.
+    ///
+    /// Подготовка списка пользователей для раздела Users в объявлении
+    /// справочников.
+    ///
+    /// В BCF идентификатор пользователя — адрес почты. В инструменте коллизий
+    /// поле «Assigned To» — произвольный текст: туда пишут и фамилию, и код
+    /// дисциплины, и ничего. Такие значения остаются в поле AssignedTo
+    /// замечания как есть — отбросив их, мы потеряли бы сведения, — но
+    /// в объявленный список Users не попадают: он должен оставаться списком
+    /// идентификаторов, а не свалкой подписей.
     /// </summary>
     public static class BcfUsers
     {
         /// <summary>
-        /// Приводит значения к нижнему регистру, убирает дубликаты и сортирует.
+        /// Lower-cases the values, drops duplicates and sorts what is left.
+        /// Приводит значения к нижнему регистру, убирает повторы и сортирует.
         /// </summary>
-        /// <param name="values">Автор выгрузки плюс все встреченные AssignedTo.</param>
+        /// <param name="values">The export author plus every AssignedTo encountered.</param>
         /// <param name="skipped">
-        /// Значения, не похожие на email. Их показывает итоговый отчёт экспорта:
+        /// The values that do not look like an address. The export report shows
+        /// them: the user has to know that the mapping of assignees is
+        /// incomplete.
+        ///
+        /// Значения, не похожие на адрес. Отчёт выгрузки их показывает:
         /// пользователь должен знать, что сопоставление исполнителей неполное.
         /// </param>
         public static IReadOnlyList<string> Normalize(IEnumerable<string> values, out IReadOnlyList<string> skipped)
@@ -52,17 +69,24 @@ namespace Bcf.Core.Vocabulary
         }
 
         /// <summary>
-        /// Проверка «похоже на email»: ровно одна собака не с краю и точка после неё.
-        /// Намеренно грубая — задача не проверить адрес, а отсечь подписи вида
-        /// «Иванов (ОВ)» до того, как кириллица попадёт в файл.
+        /// The "looks like an email" check: exactly one at-sign, not at either
+        /// end, with a dot after it. Deliberately crude — the job is not to
+        /// validate an address but to stop a caption such as "Ivanov (HVAC)"
+        /// before non-ASCII text reaches the file.
+        ///
+        /// Проверка «похоже на адрес»: ровно одна собака, не с краю, и точка
+        /// после неё. Намеренно грубая — задача не проверить адрес, а отсечь
+        /// подпись вида «Иванов (ОВ)» до того, как не-ASCII текст попадёт
+        /// в файл.
         /// </summary>
+        /// <param name="value">The value to look at.</param>
         public static bool LooksLikeEmail(string value)
         {
             if (string.IsNullOrEmpty(value)) return false;
 
             foreach (char c in value)
             {
-                // Кириллица и любые не-ASCII символы в идентификаторе недопустимы
+                // Non-ASCII characters have no place in an identifier
                 if (c > 127 || char.IsWhiteSpace(c)) return false;
             }
 

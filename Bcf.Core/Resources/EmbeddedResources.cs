@@ -5,24 +5,40 @@ using System.Reflection;
 namespace Bcf.Core.Resources
 {
     /// <summary>
-    /// Доступ к встроенным ресурсам библиотеки: справочнику значений BCF
+    /// Access to the resources embedded in the library: the BCF vocabulary and
+    /// the buildingSMART XSD schemas.
+    ///
+    /// Доступ к ресурсам, встроенным в библиотеку: справочнику значений BCF
     /// и XSD-схемам buildingSMART.
     /// </summary>
     public static class EmbeddedResources
     {
-        /// <summary>Имя ресурса с каноническим справочником значений.</summary>
+        /// <summary>
+        /// The resource name of the canonical vocabulary.
+        /// Имя ресурса с каноническим справочником значений.
+        /// </summary>
         public const string VocabularyResourceName = "Bcf.Core.Resources.bcf-extensions.json";
 
-        /// <summary>Префикс имён ресурсов со схемами BCF 3.0.</summary>
+        /// <summary>
+        /// The name prefix of the BCF 3.0 schema resources.
+        /// Префикс имён ресурсов со схемами BCF 3.0.
+        /// </summary>
         public const string Bcf30SchemaPrefix = "Bcf.Core.Schemas.Bcf30.";
 
-        /// <summary>Префикс имён ресурсов со схемами BCF 2.1.</summary>
+        /// <summary>
+        /// The name prefix of the BCF 2.1 schema resources.
+        /// Префикс имён ресурсов со схемами BCF 2.1.
+        /// </summary>
         public const string Bcf21SchemaPrefix = "Bcf.Core.Schemas.Bcf21.";
 
         /// <summary>
+        /// Opens an embedded resource by name.
         /// Открывает встроенный ресурс по имени.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Ресурс не найден — сборка собрана неверно.</exception>
+        /// <param name="resourceName">The logical name of the resource.</param>
+        /// <exception cref="InvalidOperationException">
+        /// The resource is missing, which means the assembly was built wrong.
+        /// </exception>
         public static Stream Open(string resourceName)
         {
             if (resourceName == null) throw new ArgumentNullException(nameof(resourceName));
@@ -33,15 +49,17 @@ namespace Bcf.Core.Resources
             if (stream == null)
             {
                 throw new InvalidOperationException(
-                    "Встроенный ресурс '" + resourceName + "' не найден в сборке Bcf.Core.");
+                    "Embedded resource '" + resourceName + "' is not present in the Bcf.Core assembly.");
             }
 
             return stream;
         }
 
         /// <summary>
+        /// Reads an embedded resource as UTF-8 text.
         /// Читает встроенный ресурс как текст в UTF-8.
         /// </summary>
+        /// <param name="resourceName">The logical name of the resource.</param>
         public static string ReadAllText(string resourceName)
         {
             using (Stream stream = Open(resourceName))
@@ -51,13 +69,19 @@ namespace Bcf.Core.Resources
             }
         }
 
-        /// <summary>Канонический справочник значений BCF в исходном виде (JSON).</summary>
+        /// <summary>
+        /// The canonical BCF vocabulary in its original form, as JSON.
+        /// Канонический справочник значений BCF в исходном виде, как JSON.
+        /// </summary>
         public static string ReadVocabularyJson()
         {
             return ReadAllText(VocabularyResourceName);
         }
 
-        /// <summary>Все имена встроенных ресурсов сборки.</summary>
+        /// <summary>
+        /// The names of every resource embedded in the assembly.
+        /// Имена всех ресурсов, встроенных в сборку.
+        /// </summary>
         public static string[] GetNames()
         {
             return typeof(EmbeddedResources).GetTypeInfo().Assembly.GetManifestResourceNames();
