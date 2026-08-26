@@ -125,7 +125,10 @@ namespace Bcf.Core.Tests
 
             using (var cts = new CancellationTokenSource())
             {
-                var progress = new Progress<BcfExportProgress>(p =>
+                // Не Progress<T>: он доставляет вызов через контекст
+                // синхронизации, то есть уже после выхода из using —
+                // и отмена прилетала освобождённому источнику токена
+                var progress = new ImmediateProgress(p =>
                 {
                     if (p.ProcessedClashes >= 25) cts.Cancel();
                 });
