@@ -34,6 +34,22 @@ than having only one.
 /// </summary>
 ```
 
+A short summary that fits on one line each way skips the blank line:
+
+```csharp
+/// <summary>
+/// The topic title.
+/// Заголовок замечания.
+/// </summary>
+```
+
+A summary of two or three words — an enum member, mostly — fits on a single
+line, the halves separated by a slash:
+
+```csharp
+/// <summary>Millimetres. / Миллиметры.</summary>
+```
+
 Inline `//` comments inside method bodies are English only. They are short,
 they sit next to the code they explain, and doubling them makes the code
 harder to read rather than easier.
