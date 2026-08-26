@@ -12,9 +12,13 @@ using Bcf.Core.Vocabulary;
 namespace Bcf.Core.Clash
 {
     /// <summary>
-    /// Собирает замечание из одной коллизии или из их группы.
-    /// Знает только модель BCF и настройки — ни про Navisworks, ни про формат
-    /// файла здесь ничего нет.
+    /// Assembles a topic out of one clash or out of a group of them. It knows
+    /// only the BCF model and the settings — nothing here is about Navisworks or
+    /// about the file format.
+    ///
+    /// Собирает замечание из одной коллизии или из их группы. Знает только
+    /// модель BCF и настройки — ни про Navisworks, ни про формат файла здесь
+    /// ничего нет.
     /// </summary>
     internal sealed class ClashTopicBuilder
     {
@@ -57,7 +61,7 @@ namespace Bcf.Core.Clash
         {
             if (clashes == null || clashes.Count == 0)
             {
-                throw new ArgumentException("Нет коллизий для замечания.", nameof(clashes));
+                throw new ArgumentException("There are no clashes for the topic.", nameof(clashes));
             }
 
             ClashItem first = clashes[0];
@@ -106,13 +110,22 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// A topic made from a saved view.
+        ///
+        /// The type is Issue and not Clash, and it carries no automatic-test
+        /// label: this is what a person saw with their own eyes and recorded as
+        /// a view, not the result of an automatic test. A service has to be able
+        /// to tell the two apart without reading the text.
+        ///
         /// Замечание из сохранённого вида.
         ///
         /// Тип — Issue, а не Clash, и без метки автопроверки: это то, что
         /// человек увидел глазами и зафиксировал видом, а не результат
-        /// автоматической проверки. Сервис должен уметь их различать
-        /// без разбора текста.
+        /// автоматической проверки. Сервис должен уметь различать их, не
+        /// разбирая текст.
         /// </summary>
+        /// <param name="topicGuid">The identifier for the topic.</param>
+        /// <param name="viewpoint">The saved view to build from.</param>
         public BcfTopic BuildFromViewpoint(Guid topicGuid, SavedViewpointInfo viewpoint)
         {
             if (viewpoint == null) throw new ArgumentNullException(nameof(viewpoint));
@@ -132,8 +145,8 @@ namespace Bcf.Core.Clash
 
             foreach (string label in _settings.Labels)
             {
-                // Auto означает «нашла автопроверка» — на ручном замечании
-                // эта метка врёт, и сервис по ней построит неверную статистику
+                // Auto means "an automatic test found this" — on a hand-written
+                // topic the label lies, and a service builds wrong figures on it
                 if (string.IsNullOrWhiteSpace(label)) continue;
                 if (string.Equals(label, BcfVocabulary.TopicLabels.Auto, StringComparison.Ordinal)) continue;
 
@@ -171,8 +184,8 @@ namespace Bcf.Core.Clash
 
             if (viewpoint.HasVisibilityOverrides)
             {
-                // Важное предупреждение для приёмника: автор вида что-то скрывал,
-                // и открытый в другой программе вид будет выглядеть иначе
+                // An important warning for the receiving tool: the author of the
+                // view hid something, and opened elsewhere it will look different
                 sb.AppendLine("В виде скрыта часть модели — снимок показывает то, что видел автор.");
             }
 
@@ -197,7 +210,11 @@ namespace Bcf.Core.Clash
             }
         }
 
-        /// <summary>Элементы всех коллизий замечания, без повторов.</summary>
+        /// <summary>
+        /// The elements of every clash of the topic, with no repeats.
+        /// Элементы всех коллизий замечания, без повторов.
+        /// </summary>
+        /// <param name="clashes">The clashes to take the elements from.</param>
         public static IReadOnlyList<BcfComponent> Components(IReadOnlyList<ClashItem> clashes)
         {
             var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -219,9 +236,13 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// The topic status for a group of clashes. The most "open" one by the
+        /// lifecycle model wins: a group counts as closed only when it is closed
+        /// entirely, or part of the work drops out of sight.
+        ///
         /// Статус замечания для группы коллизий. Побеждает самый «открытый»
-        /// по модели жизненного цикла: группа считается закрытой только тогда,
-        /// когда закрыта целиком, иначе часть работы потеряется из виду.
+        /// по модели жизненного цикла: группа считается закрытой, только когда
+        /// закрыта целиком, иначе часть работы пропадёт из виду.
         /// </summary>
         private string ResolveStatus(IReadOnlyList<ClashItem> clashes)
         {
@@ -235,8 +256,8 @@ namespace Bcf.Core.Clash
                 if (status == null)
                 {
                     _result.Warn(
-                        "Статус Clash Detective '" + (clash.Status ?? "<пусто>") +
-                        "' не сопоставлен со справочником, использован " + BcfVocabulary.TopicStatuses.Default + ".");
+                        "The Clash Detective status '" + (clash.Status ?? "<empty>") +
+                        "' is not mapped to the vocabulary; " + BcfVocabulary.TopicStatuses.Default + " was used.");
 
                     status = BcfVocabulary.TopicStatuses.Default;
                 }
@@ -268,16 +289,16 @@ namespace Bcf.Core.Clash
                 if (!string.IsNullOrWhiteSpace(label)) yield return label;
             }
 
-            // Имя группы меткой: значение объявляет экспортёр, здесь оно просто
-            // добавляется к остальным
+            // The group name as a label: the exporter declares the value, here
+            // it is simply added to the rest
             if (_settings.GroupNameAsLabel && !string.IsNullOrWhiteSpace(clash.GroupName))
             {
                 yield return clash.GroupName.Trim();
             }
 
-            // Метка дисциплины выводится из имени теста по заданным правилам.
-            // Правил нет — метки нет: у каждого заказчика свои имена проверок,
-            // и угадывать их значит ставить неверную метку молча.
+            // The discipline label is derived from the test name by the rules
+            // given. No rules, no label: every client names their tests their own
+            // way, and guessing means putting a wrong label on quietly.
             string discipline = MatchDiscipline(clash.TestName);
             if (discipline != null) yield return discipline;
         }
@@ -307,8 +328,8 @@ namespace Bcf.Core.Clash
             {
                 if (string.IsNullOrWhiteSpace(comment.Text)) continue;
 
-                // В группе один и тот же комментарий часто продублирован
-                // на каждой коллизии — в замечании он нужен один раз
+                // Within a group the same comment is often repeated on every
+                // clash — the topic needs it once
                 string key = comment.Author + "|" + comment.Date.ToString("O", CultureInfo.InvariantCulture) + "|" + comment.Text;
                 if (!seen.Add(key)) continue;
 
@@ -338,8 +359,8 @@ namespace Bcf.Core.Clash
                 sb.Append("Коллизия: ").AppendLine(first.DisplayName);
             }
 
-            // Имя группы нужно и поштучным замечаниям: без него принадлежность
-            // к группе теряется совсем, а по ней строят отбор на той стороне
+            // Per-clash topics need the group name too: without it the group
+            // membership is lost entirely, and the other side filters by it
             if (!string.IsNullOrWhiteSpace(first.GroupName)) sb.Append("Группа: ").AppendLine(first.GroupName);
 
             if (!string.IsNullOrWhiteSpace(first.LevelName)) sb.Append("Уровень: ").AppendLine(first.LevelName);
@@ -347,7 +368,8 @@ namespace Bcf.Core.Clash
 
             if (_settings.IncludeDistance && first.DistanceMeters.HasValue)
             {
-                // Инвариантная культура: описание читает и человек, и парсер
+                // The invariant culture: the description is read by a person and
+                // by a parser alike
                 sb.Append("Расстояние: ").Append(BcfNumber.Format(first.DistanceMeters.Value)).AppendLine(" м");
             }
 
@@ -370,8 +392,8 @@ namespace Bcf.Core.Clash
 
         private static void AppendElements(StringBuilder sb, IReadOnlyList<ClashItem> clashes)
         {
-            // У группы перечислять элементы всех коллизий бессмысленно:
-            // описание разрастётся до нечитаемого. Показываем первую коллизию.
+            // Listing the elements of every clash of a group makes no sense: the
+            // description would grow past reading. The first clash is shown.
             IList<ClashElementInfo> elements = clashes[0].Elements;
             int number = 1;
 
