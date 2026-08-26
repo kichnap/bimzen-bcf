@@ -160,7 +160,7 @@ namespace Bcf.Core.Serialization
             _archive.Dispose();
         }
 
-        private bool CopyEntry(ZipArchiveEntry entry, BcfArchiveWriter writer)
+        private static bool CopyEntry(ZipArchiveEntry entry, BcfArchiveWriter writer)
         {
             using (Stream content = entry.Open())
             {

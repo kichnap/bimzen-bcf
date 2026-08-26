@@ -1,55 +1,61 @@
-# Эталонные архивы
+[English] · [Русский](README.ru.md)
 
-Фикстуры для тестов импорта. Собраны настоящим экспортёром (`BcfClashExporter`)
-на синтетическом источнике коллизий — то есть тем же кодом, которым плагин
-пишет боевые файлы, а не разметкой, написанной руками под тест.
+# Reference archives
 
-Пересобрать:
+Fixtures for import tests. They are produced by the real exporter
+(`BcfClashExporter`) over a synthetic clash source — the same code that writes
+production files, not markup hand-written for a test.
+
+Rebuild them with:
 
 ```
 dotnet run --project Bcf.TestData.Generator
 ```
 
-Генерация **воспроизводима побайтово**: время выгрузки и метки времени записей
-архива зафиксированы, идентификаторы выводятся из устойчивых ключей. Повторный
-прогон без изменений в коде не меняет ни одного файла — в истории репозитория
-не будет шума.
+Generation is **reproducible byte for byte**: the export time and the archive
+entry timestamps are fixed, and identifiers are derived from stable keys.
+A second run with no code changes touches no file, so the repository history
+stays free of noise.
 
-## Состав
+## Contents
 
-| Файл | Что внутри |
+| File | What is inside |
 |---|---|
-| `small-3-topics-bcf30.bcfzip` | 3 замечания, режим «группа — одно замечание», снимки у всех |
-| `small-3-topics-bcf21.bcfzip` | то же самое в BCF 2.1 |
-| `large-500-topics-bcf30.bcfzip` | 500 замечаний, режим «каждая коллизия отдельно» |
-| `large-500-topics-bcf21.bcfzip` | то же самое в BCF 2.1 |
-| `foreign-values-bcf30.bcfzip` | архив со значениями чужого словаря |
+| `small-3-topics-bcf30.bcfzip` | 3 topics, one topic per clash group, snapshots everywhere |
+| `small-3-topics-bcf21.bcfzip` | the same in BCF 2.1 |
+| `large-500-topics-bcf30.bcfzip` | 500 topics, one topic per clash |
+| `large-500-topics-bcf21.bcfzip` | the same in BCF 2.1 |
+| `foreign-values-bcf30.bcfzip` | an archive carrying another tool's vocabulary |
 
-В больших архивах снимки есть только у первых пятидесяти замечаний: пятьсот
-картинок раздули бы файл в репозитории до мегабайтов, а импортёру полезнее
-увидеть в одном файле оба случая — и замечание со снимком, и замечание без него.
+In the large archives only the first fifty topics have snapshots: five hundred
+images would inflate the file in the repository into megabytes, and an
+importer benefits more from seeing both cases in one file — a topic with a
+snapshot and a topic without one.
 
-Снимки — настоящие PNG (320×240, градиент), а не заглушка из подписи формата:
-импортёр должен иметь возможность их декодировать.
+The snapshots are real PNGs (320×240, a gradient) rather than a placeholder
+carrying the format signature: an importer must be able to decode them.
 
 ## `foreign-values-bcf30.bcfzip`
 
-Статусы заменены на `Открыто`, типы — на `Пересечение`. Ни того, ни другого
-в справочнике нет, и наш экспортёр такой файл создать не может: на выход
-валидация строгая. Файл собран подменой значений в готовом архиве — так его
-прислал бы BIMcollab, Revizto или Solibri со своими словарями.
+Statuses are replaced with `Открыто`, types with `Пересечение`. Neither exists
+in the vocabulary, and our exporter cannot produce such a file: validation on
+write is strict. The fixture was built by substituting values inside a
+finished archive — exactly as BIMcollab, Revizto or Solibri would send it with
+their own vocabularies.
 
-Это законно: стандарт BCF словари не фиксирует, он лишь описывает механизм
-их объявления. **Импортёр обязан такой файл принять**, сохранить значения как
-есть и показать их пользователю с пометкой «внешнее значение», а не отвергнуть
-файл и не подменить значения на «правильные». Проверяется тестом
-`TestDataFixturesTests.ForeignValues_AreReadWithoutError_AndReported`.
+This is legitimate: the BCF standard does not fix the vocabularies, it only
+describes the mechanism for declaring them. **An importer must accept such a
+file**, keep the values as they are and show them marked as external, rather
+than reject the file or silently replace the values with "correct" ones. The
+test `TestDataFixturesTests.ForeignValues_AreReadWithoutError_AndReported`
+checks exactly that.
 
-## Что в них можно проверять
+## What these fixtures are good for
 
-- разбор `markup.bcf`, `extensions.xml` (3.0) и `extensions.xsd` (2.1);
-- камеры: перспективная, секущие плоскости, `AspectRatio` в 3.0 и его
-  отсутствие в 2.1, угол обзора, подрезанный под диапазон [45; 60] в 2.1;
-- кириллица в текстах при ASCII-именах записей архива;
-- числа с точкой как разделителем и даты ISO 8601 с явным смещением;
-- поведение на 500 замечаниях: время разбора, потребление памяти.
+- parsing `markup.bcf`, `extensions.xml` (3.0) and `extensions.xsd` (2.1);
+- cameras: perspective, clipping planes, `AspectRatio` present in 3.0 and
+  absent in 2.1, and the field of view clamped to [45; 60] in 2.1;
+- non-ASCII text in content while archive entry names stay ASCII;
+- numbers with a dot as the decimal separator and ISO 8601 dates with an
+  explicit offset;
+- behaviour on 500 topics: parsing time and memory use.

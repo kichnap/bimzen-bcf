@@ -1,7 +1,7 @@
-<!-- Свойства для всех проектов bimzen-bcf.
-     Файл нужен ещё и затем, чтобы репозиторий, подключённый сабмодулем,
-     не подхватывал Directory.Build.props потребителя: MSBuild поднимается
-     вверх по дереву до первого найденного файла и на этом останавливается. -->
+<!-- Properties shared by every project in this repository.
+     The file also shields the repository from a consumer's own
+     Directory.Build.props when it is checked out inside another tree:
+     MSBuild walks up until it finds the first such file and stops there. -->
 <Project>
   <PropertyGroup>
     <LangVersion>latest</LangVersion>

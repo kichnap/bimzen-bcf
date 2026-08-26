@@ -1,4 +1,5 @@
-# Сборка и тесты Bcf.Core. Navisworks здесь не нужен вовсе — это и проверяется.
+# Build and test Bcf.Core. No BIM application is installed on the runner,
+# and that is precisely what this workflow proves.
 name: Build
 
 on:

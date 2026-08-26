@@ -44,7 +44,10 @@ namespace Bcf.Core.Vocabulary
         private const string XmlSchemaPrefix = "xs";
 
         /// <summary>
-        /// Пишет extensions.xml (BCF 3.0) в поток. UTF-8 без BOM: Node-парсеры
+        /// Writes extensions.xml (BCF 3.0) to a stream. UTF-8 without a BOM:
+        /// parsers outside .NET stumble over a BOM far more often.
+        ///
+        /// Пишет extensions.xml (BCF 3.0) в поток. UTF-8 без BOM: чужие парсеры
         /// на BOM спотыкаются чаще, чем .NET.
         /// </summary>
         /// <param name="stream">Поток архива.</param>
@@ -54,7 +57,17 @@ namespace Bcf.Core.Vocabulary
             Write30(stream, users, null);
         }
 
+        /// <summary>
+        /// Writes extensions.xml (BCF 3.0) to a stream. UTF-8 without a BOM.
+        ///
+        /// Пишет extensions.xml (BCF 3.0) в поток. UTF-8 без BOM.
+        /// </summary>
+        /// <param name="stream">The archive entry stream.</param>
+        /// <param name="users">Export author and the assignees encountered, already filtered through <see cref="BcfUsers"/>.</param>
         /// <param name="extra">
+        /// Foreign values that entered the archive while updating an existing
+        /// file. A file we write must declare everything it contains.
+        ///
         /// Чужие значения, попавшие в архив при обновлении существующего файла.
         /// Файл, который мы пишем, обязан объявлять всё, что в нём есть.
         /// </param>
@@ -86,13 +99,26 @@ namespace Bcf.Core.Vocabulary
             }
         }
 
-        /// <summary>Пишет extensions.xsd (BCF 2.1) в поток. UTF-8 без BOM.</summary>
+        /// <summary>
+        /// Writes extensions.xsd (BCF 2.1) to a stream. UTF-8 without a BOM.
+        ///
+        /// Пишет extensions.xsd (BCF 2.1) в поток. UTF-8 без BOM.
+        /// </summary>
+        /// <param name="stream">The archive entry stream.</param>
+        /// <param name="users">Export author and the assignees encountered.</param>
         public static void Write21(Stream stream, IEnumerable<string> users)
         {
             Write21(stream, users, null);
         }
 
-        /// <param name="extra">Чужие значения — см. <see cref="Write30(Stream, IEnumerable{string}, BcfExtraVocabulary)"/>.</param>
+        /// <summary>
+        /// Writes extensions.xsd (BCF 2.1) to a stream. UTF-8 without a BOM.
+        ///
+        /// Пишет extensions.xsd (BCF 2.1) в поток. UTF-8 без BOM.
+        /// </summary>
+        /// <param name="stream">The archive entry stream.</param>
+        /// <param name="users">Export author and the assignees encountered.</param>
+        /// <param name="extra">Foreign values — see <see cref="Write30(Stream, IEnumerable{string}, BcfExtraVocabulary)"/>.</param>
         public static void Write21(Stream stream, IEnumerable<string> users, BcfExtraVocabulary extra)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));

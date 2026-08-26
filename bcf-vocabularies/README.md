@@ -1,40 +1,53 @@
-# Справочники BCF — единый источник правды
+[English] · [Русский](README.ru.md)
 
-Этот пакет описывает согласованные значения `TopicType`, `TopicStatus`, `Priority`, `TopicLabel`, `Stage` и отображение статусов Navisworks. Он используется двумя независимыми проектами:
+# BCF vocabularies — the single source of truth
 
-- **Плагин Navisworks** (C#/.NET) — файловый экспорт `.bcfzip` и, на втором этапе, клиент BCF-API.
-- **Онлайн-сервис** (Node/TypeScript) — серверная часть BCF-API и импорт файлов.
+This folder defines the agreed values for `TopicType`, `TopicStatus`,
+`Priority`, `TopicLabel`, `Stage`, and the mapping of clash statuses coming
+from a clash-detection tool.
 
-**Правится только `bcf-extensions.json`.** Всё остальное — производное.
+**Only `bcf-extensions.json` is edited.** Everything else is derived from it.
 
-## Состав
+## Contents
 
-| Файл | Назначение |
+| File | Purpose |
 |---|---|
-| `bcf-extensions.json` | Канонический справочник: wire-значения, русские подписи, семантика, цвета, разрешённые переходы, таблицы маппинга |
-| `extensions.xml` | Готовый файл для корня `.bcfzip` (BCF 3.0) |
-| `README.md` | Правила, обоснования, инструкции по интеграции |
+| `bcf-extensions.json` | The canonical vocabulary: wire values, display labels, semantics, colours, allowed transitions, mapping tables |
+| `extensions.xml` | A ready file for the root of a `.bcfzip` (BCF 3.0) |
+| `README.md` | Rules, reasoning, integration notes |
 
-## Ключевое решение: wire-значения английские
+## The key decision: wire values are English
 
-В BCF **нет пары «идентификатор + отображаемое имя»**. Поле `TopicStatus` в `markup.bcf` — это обычная строка, и сторонние приложения (Solibri, BIMcollab Zoom, Revizto) показывают её пользователю буквально.
+BCF has **no pair of "identifier plus display name"**. `TopicStatus` in
+`markup.bcf` is an ordinary string, and third-party applications — Solibri,
+BIMcollab Zoom, Revizto — show it to the user literally.
 
-Отсюда:
+Therefore:
 
-- Машинные значения — английские ASCII: `In Progress`, `Clash`, `Critical`.
-- Русские подписи применяются **только в UI** плагина и веб-сервиса, через таблицу `labels`.
-- В файлы и в HTTP-тела кириллица не попадает никогда.
+- Machine values are English ASCII: `In Progress`, `Clash`, `Critical`.
+- Localised labels are used **in a user interface only**, through the
+  `labels` table.
+- Non-ASCII text never reaches a file or an HTTP body.
 
-Обратный вариант (кириллица на проводе) выглядит удобнее в первый день и ломается на второй: чужие парсеры спотыкаются на кодировках, а ваши данные становятся непереносимыми.
+The opposite choice — localised values on the wire — looks convenient on the
+first day and breaks on the second: other parsers stumble over encodings and
+your data stops being portable.
 
-## Правила изменения
+## Rules for changing the vocabulary
 
-1. **Wire-значения неизменяемы после первого релиза.** Переименование статуса = миграция всех топиков на сервере и рассинхрон с уже выгруженными файлами.
-2. **Добавлять можно, удалять — нет.** Вышедшее из употребления значение помечается `deprecated: true`, скрывается в UI при создании, но продолжает корректно отображаться в старых данных.
-3. **Версия справочника** (`vocabularyVersion`) — semver. Мажорная — при несовместимых изменениях, минорная — при добавлении значений. Сервис должен отдавать её клиенту, чтобы плагин мог предупредить о расхождении.
-4. Сравнение значений — **строгое, с регистром и пробелами**. `In Progress` ≠ `in progress` ≠ `InProgress`.
+1. **Wire values are immutable after the first release.** Renaming a status
+   means migrating every topic on the server and diverging from archives
+   already sent out.
+2. **You may add, you may not remove.** A value that fell out of use is
+   marked `deprecated: true`, hidden in the UI when creating, and still
+   displayed correctly in older data.
+3. **The vocabulary version** (`vocabularyVersion`) is semver. Major for
+   incompatible changes, minor when values are added. A service should hand
+   it to its clients so that a client can warn about a mismatch.
+4. Comparison is **strict, case and spaces included**. `In Progress` ≠
+   `in progress` ≠ `InProgress`.
 
-## Модель жизненного цикла
+## The lifecycle model
 
 ```
 New ──► Assigned ──► In Progress ──► Resolved ──► Closed
@@ -45,56 +58,85 @@ New ──► Assigned ──► In Progress ──► Resolved ──► Closed
  └──────────┴─────────────────► Rejected
 ```
 
-Смысловые решения, которые стоит понимать:
+Decisions worth understanding:
 
-- **`Resolved` не конечный.** Исполнитель заявляет об устранении, но подтверждает координатор после следующей выгрузки модели. Смешивать «исполнитель сказал» и «проверено» в один статус — самая частая ошибка в подобных системах: метрики перестают отражать реальность.
-- **`Reopened` — отдельный статус, а не возврат в `Assigned`.** Нужен ради метрики повторных возвратов: доля переоткрытых замечаний показывает качество работы дисциплины лучше, чем общее количество коллизий.
-- **`Rejected` и `Deferred` требуют комментария** (`requiresComment: true`). Закрытие без обоснования — это то, чем система обесценивается через месяц эксплуатации.
-- **`Assigned` и `In Progress` требуют исполнителя** (`requiresAssignee: true`).
+- **`Resolved` is not terminal.** The assignee claims the issue is fixed;
+  the coordinator confirms it after the next model export. Merging "the
+  assignee said so" and "it was verified" into one status is the most common
+  mistake in systems like this: the metrics stop reflecting reality.
+- **`Reopened` is a status of its own, not a return to `Assigned`.** It
+  exists for the re-opening metric: the share of reopened issues says more
+  about a discipline's quality than the total number of clashes.
+- **`Rejected` and `Deferred` require a comment** (`requiresComment: true`).
+  Closing without a reason is what devalues the system a month into use.
+- **`Assigned` and `In Progress` require an assignee**
+  (`requiresAssignee: true`).
 
-Поле `allowedTransitions` предназначено для валидации на сервере. Плагин использует его для того, чтобы не показывать недопустимые переходы, но **авторитетная проверка — на сервере**: клиенту доверять нельзя, а сторонние клиенты о ваших переходах не знают вовсе.
+`allowedTransitions` is meant for validation on a server. A client may use it
+to avoid offering impossible transitions, but **the authoritative check
+belongs to the server**: clients cannot be trusted, and third-party clients
+know nothing about your transitions at all.
 
-## Спорное место, требующее вашего решения
+## An ambiguity that each deployment resolves for itself
 
-Отображение `Approved` из Navisworks. В Clash Detective этот статус используют двояко:
+The `Approved` status of a clash-detection tool is used in two different
+ways:
 
-| Трактовка | Целевой статус BCF | Когда выбирать |
+| Reading | Target BCF status | When to choose it |
 |---|---|---|
-| «Исправление проверено и принято» | `Closed` (задан по умолчанию) | Координатор ведёт весь цикл в Navisworks |
-| «Пересечение признано допустимым» | `Rejected` | `Approved` используется как «согласованное отступление» |
+| "The fix was verified and accepted" | `Closed` (the current default) | The coordinator runs the whole cycle in the clash tool |
+| "The intersection was accepted as tolerable" | `Rejected` | `Approved` is used as an agreed deviation |
 
-В диалоге экспорта маппинг переопределяется, но дефолт лучше выставить под фактическую практику ваших координаторов. Сейчас в `bcf-extensions.json` стоит `Closed`.
+The mapping is overridable in the export settings; the default should match
+what your coordinators actually do. `bcf-extensions.json` currently says
+`Closed`.
 
-## Асимметрия обратного отображения
+## The asymmetry of mapping back
 
-Набор статусов Navisworks (`New`, `Active`, `Reviewed`, `Approved`, `Resolved`) беднее вашего. При подтягивании статусов с сервера обратно в Clash Detective неизбежны потери: `Assigned`, `In Progress` и `Reopened` все сворачиваются в `Active`.
+The status set of a clash-detection tool (`New`, `Active`, `Reviewed`,
+`Approved`, `Resolved`) is poorer than the one above. Pulling statuses back
+from a coordination service therefore loses information: `Assigned`,
+`In Progress` and `Reopened` all collapse into `Active`.
 
-Следствие для реализации: **Clash Detective не может быть источником правды по статусам.** Полный статус хранится на сервере и отображается в панели плагина; запись в `ClashResult.Status` — вспомогательная, для тех, кто смотрит только в родной интерфейс Navisworks. Не делайте на ней логику.
+The consequence: **a clash-detection tool cannot be the source of truth for
+statuses.** The full status lives on the server; what is written back into
+the clash result is a convenience for whoever looks only at the native
+interface. Do not build logic on it.
 
-## Асимметрия валидации: строго на выход, терпимо на вход
+## The asymmetry of validation: strict out, lenient in
 
-Стандарт не фиксирует словари — их объявляет каждая реализация. Значит, **входящие файлы от сторонних инструментов будут содержать значения, которых в этом справочнике нет**: BCF из Revizto, BIMcollab или Solibri придёт со своими статусами и типами, и это полностью законно.
+The standard does not fix the vocabularies — each implementation declares its
+own. That means **incoming files from other tools will contain values that
+are not in this vocabulary**: BCF from Revizto, BIMcollab or Solibri arrives
+with its own statuses and types, entirely legitimately.
 
-Отсюда два разных режима:
+Two different modes follow:
 
-| Направление | Поведение |
+| Direction | Behaviour |
 |---|---|
-| **Исходящее** (создание топиков плагином, POST в API, экспорт в файл) | Строгая валидация. Значение вне справочника — ошибка, `422` с перечислением допустимых. |
-| **Входящее** (импорт `.bcfzip`, приём топиков от сторонних клиентов) | Значение сохраняется **как есть**, топик не отвергается. В UI показывается с пометкой «внешний статус», нейтральным цветом, и не участвует в валидации переходов. |
+| **Outgoing** (creating topics, POST to an API, writing a file) | Strict validation. A value outside the vocabulary is an error — `422` with the allowed values listed |
+| **Incoming** (importing a `.bcfzip`, accepting topics from other clients) | The value is preserved **as-is** and the topic is not rejected. A UI shows it marked as external, in a neutral colour, and it takes no part in transition validation |
 
-Реализация на сервере:
+On a server:
 
-- Храните `topic_status` строкой, а не ссылкой на enum-таблицу. Ограничение целостности по справочнику наложит вас же на первом импорте извне.
-- Держите отдельный флаг `is_known_status` (вычисляемый) — по нему строятся метрики и фильтры, чтобы внешние значения не портили статистику.
-- Дайте координатору механизм **сопоставления вручную**: «`Открыто` из чужого файла → наш `New`», с сохранением исходного значения в истории топика.
-- То же для `topic_type`, `priority`, `labels`, `stage`.
+- Store `topic_status` as a string, not as a reference to an enum table.
+  A foreign key onto the vocabulary will trap you on the first import from
+  outside.
+- Keep a separate computed flag such as `is_known_status` — metrics and
+  filters are built on it so that external values do not distort statistics.
+- Give the coordinator a way to **map values by hand**: "`Открыто` from
+  someone else's file → our `New`", preserving the original value in the
+  topic history.
+- The same applies to `topic_type`, `priority`, `labels` and `stage`.
 
-Отвергать импорт из-за незнакомого статуса — самый быстрый способ получить репутацию инструмента, который «не понимает openBIM».
+Rejecting an import because of an unfamiliar status is the fastest way to
+earn a reputation as the tool that "does not understand openBIM".
 
-## Интеграция: онлайн-сервис (Node/TypeScript)
+## Integration: a service (Node/TypeScript)
 
-1. Положите `bcf-extensions.json` в репозиторий как единственный источник справочников. Не заводите параллельные enum'ы в коде.
-2. Сгенерируйте типы и константы на этапе сборки:
+1. Keep `bcf-extensions.json` in the repository as the only source of
+   vocabularies. Do not create parallel enums in code.
+2. Generate types and constants at build time:
 
 ```ts
 import vocab from './bcf-extensions.json';
@@ -107,27 +149,27 @@ export const TRANSITIONS = Object.fromEntries(
 );
 ```
 
-3. Отдавайте справочники в `GET /bcf/3.0/projects/{id}/extensions` **из этого же файла**, а не из захардкоженного ответа. Иначе расхождение между файловым и API-каналом гарантировано.
-4. Валидируйте `topic_status`, `topic_type`, `priority`, `labels`, `stage` **на создание и изменение через ваш UI и плагин** — вне справочника отвечайте `422` с перечислением допустимых значений. При **импорте файлов и приёме от сторонних клиентов** валидацию не применяйте: сохраняйте значение как есть (см. раздел про асимметрию валидации).
-5. Валидируйте переходы по `allowedTransitions` и отклоняйте недопустимые с `409`.
-6. Проверяйте `requiresComment` и `requiresAssignee` перед сменой статуса.
+3. Serve `GET /bcf/3.0/projects/{id}/extensions` **from this same file**
+   rather than from a hard-coded response. Otherwise the file channel and the
+   API channel are guaranteed to diverge.
+4. Validate `topic_status`, `topic_type`, `priority`, `labels` and `stage`
+   **on creation and modification through your own clients** — respond `422`
+   with the allowed values for anything outside the vocabulary. On **file
+   import and on topics from third-party clients** do not validate: store the
+   value as-is (see the section on validation asymmetry).
+5. Validate transitions against `allowedTransitions` and reject impossible
+   ones with `409`.
+6. Check `requiresComment` and `requiresAssignee` before a status change.
 
-## Интеграция: плагин Navisworks (C#)
+## Integration: a .NET host
 
-1. Добавьте `bcf-extensions.json` как embedded resource в `Bcf.Core`.
-2. Сгенерируйте константы на этапе сборки (T4, source generator или предсобранный `.cs`) — **не пишите строки руками по месту вызова**.
-3. Дефолты при экспорте: `TopicType = Clash`, `Priority = Normal`, `Stage = Design`, статус — по `navisworksStatusMapping`.
-4. Метку дисциплины (`ARC`, `HVAC`, …) выводите из имени теста Clash Detective или из выбранных наборов — с ручным переопределением в диалоге.
-5. Метку `Auto` ставьте на всё, что выгружено из Clash Detective автоматически: это позволит вашему сервису отличать автоматические коллизии от ручных замечаний без анализа текста.
-
-## Что передать в промпты
-
-В «Параметры проекта» промпта 1 добавьте:
-
-```
-- Справочники BCF: заданы в bcf-vocabularies/bcf-extensions.json, изменению не подлежат.
-  Значения не хардкодить, генерировать константы из файла. extensions.xml
-  генерировать оттуда же, а не вкладывать готовым.
-```
-
-В промпте 2 то же самое плюс требование сверять `vocabularyVersion` с тем, что отдаёт сервер, и предупреждать пользователя при расхождении мажорной версии.
+1. `bcf-extensions.json` is already an embedded resource of `Bcf.Core`.
+2. Constants are generated from it — **never write the strings by hand at
+   the call site**. See `Bcf.Vocabulary.Generator`.
+3. Sensible export defaults: `TopicType = Clash`, `Priority = Normal`,
+   `Stage = Design`, and the status through `navisworksStatusMapping`.
+4. Derive a discipline label (`ARC`, `HVAC`, …) from the name of the clash
+   test or from the selected sets, with a manual override available.
+5. Put the `Auto` label on everything exported automatically: it lets a
+   receiving service tell automatic clashes from issues raised by hand
+   without parsing any text.

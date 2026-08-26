@@ -1,38 +1,65 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- netstandard2.0 грузится и в net48 (Navisworks), и в net8+ (агент, будущие
-         версии хоста). Ни одной ссылки на Autodesk.Navisworks.Api здесь быть не должно:
-         библиотека обязана собираться и тестироваться на машине без Navisworks. -->
+    <!-- netstandard2.0 loads into net48 (desktop BIM applications) and into
+         net8+ (services, background agents). There must be no reference to any
+         host API here: the library has to build and test on a machine where no
+         BIM application is installed. -->
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Bcf.Core</RootNamespace>
     <AssemblyName>Bcf.Core</AssemblyName>
-    <!-- Сборку намеренно НЕ подписываем строгим именем: рядом в одном процессе
-         Navisworks может оказаться вторая надстройка с этой же библиотекой,
-         и разрешать конфликт версий придётся тому, кто ставит оба компонента. -->
+    <!-- Deliberately NOT strong-named: a second add-in carrying this very
+         library may live in the same process, and resolving a version conflict
+         would land on whoever installs both. -->
     <SignAssembly>false</SignAssembly>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <!-- CA1720: свойство называется Guid, потому что так называется поле
-         в спецификации BCF. Переименование ради правила анализатора сделало бы
-         модель непохожей на стандарт, по которому её сверяют. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CA1720: the property is called Guid because that is its name in the BCF
+         specification. Renaming it to satisfy an analyzer would make the model
+         look unlike the standard it is checked against. -->
     <NoWarn>$(NoWarn);CA1720</NoWarn>
   </PropertyGroup>
 
-  <!-- Никаких PackageReference: каждая зависимость Bcf.Core удваивает риск
-       конфликта сборок при двух надстройках в одном процессе Navisworks.
-       Всё, что нужно, есть в поверхности netstandard2.0. -->
+  <!-- NuGet package metadata. The package is the supported way to consume the
+       library; the sources stay public for reading and contributing. -->
+  <PropertyGroup>
+    <PackageId>BimZen.Bcf.Core</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>kichnap</Authors>
+    <Description>A .NET library for the buildingSMART Collaboration Format (BCF): the model, readers and writers for BCF 3.0 and 2.1, camera and unit converters, IFC GUID conversion, and a single source of truth for the vocabularies. Targets netstandard2.0 and has no runtime dependencies.</Description>
+    <PackageTags>bcf;buildingsmart;openbim;ifc;bim;clash-detection;bcfzip</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/kichnap/bimzen-bcf</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kichnap/bimzen-bcf</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) 2026 kichnap</Copyright>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <!-- The package is built on demand by `dotnet pack`, never as a side effect
+         of a plain build: a stray .nupkg in bin/ is how wrong versions travel. -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- No PackageReference: every dependency of Bcf.Core doubles the risk of an
+       assembly conflict when two add-ins share one process. Everything needed
+       is in the netstandard2.0 surface. -->
 
   <ItemGroup>
-    <!-- Справочник — единственный источник правды по значениям BCF.
-         Лежит рядом, в общей папке репозитория: его же читают генератор
-         констант, онлайн-сервис на Node и агент на C#. -->
+    <!-- The English README travels with the package: nuget.org renders it on
+         the package page, and it is the first thing a new consumer reads. -->
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+
+    <!-- The vocabulary — the single source of truth for BCF values. It lives in
+         a shared folder of the repository because the constant generator and
+         non-.NET consumers read the very same file. -->
     <EmbeddedResource Include="..\bcf-vocabularies\bcf-extensions.json"
                       Link="Resources\bcf-extensions.json"
                       LogicalName="Bcf.Core.Resources.bcf-extensions.json" />
 
-    <!-- XSD buildingSMART: BCF-XML, ветки release_3_0 и release_2_1.
-         Кладём ресурсами, а не файлами рядом с DLL — сборка бандла плагина
-         вычищает из Contents все посторонние файлы. -->
+    <!-- buildingSMART XSDs: BCF-XML, branches release_3_0 and release_2_1.
+         Embedded rather than shipped as files next to the DLL, because a host
+         packaging step may sweep unknown files out of its plug-in folder. -->
     <EmbeddedResource Include="..\schemas\3.0\*.xsd">
       <Link>Schemas\3.0\%(Filename)%(Extension)</Link>
       <LogicalName>Bcf.Core.Schemas.Bcf30.%(Filename)%(Extension)</LogicalName>

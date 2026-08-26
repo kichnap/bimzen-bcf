@@ -1,124 +1,158 @@
+**English** · [Русский](README.ru.md) · [Deutsch](README.de.md) · [Nederlands](README.nl.md) · [Suomi](README.fi.md)
+
 # bimzen-bcf
 
-Общий код и справочники BCF для продуктов BIMzen. Репозиторий подключается
-**сабмодулем** во все проекты-потребители — копировать содержимое к себе нельзя:
-разошедшиеся копии справочника дают рассинхрон на живых данных, у пользователя.
+[![Build](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml/badge.svg)](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Target](https://img.shields.io/badge/target-netstandard2.0-blue.svg)](Bcf.Core/Bcf.Core.csproj)
+[![BCF](https://img.shields.io/badge/BCF-3.0%20%7C%202.1-blue.svg)](https://github.com/buildingSMART/BCF-XML)
 
-| Потребитель | Что берёт |
+**A .NET library for the buildingSMART Collaboration Format (BCF), plus the
+single source of truth for the vocabularies that go with it.**
+
+`Bcf.Core` targets `netstandard2.0`, has zero runtime dependencies, and knows
+nothing about any host application. Everything host-specific lives behind
+narrow ports that the embedding tool implements. The output is validated
+against the official buildingSMART XSDs on every build.
+
+## What it does
+
+| Area | What you get |
 |---|---|
-| Плагин Navisworks (`bimzennavi`) | `Bcf.Core` исходниками + справочники |
-| Агент конвейера и коллизий (C#) | то же самое |
-| Онлайн-сервис (Node/TypeScript) | только `bcf-vocabularies/bcf-extensions.json` |
+| Write | BCF 3.0 and BCF 2.1 — two independent serializers, not one parameterised writer |
+| Read | Lenient by design: unknown statuses and types from other tools are preserved, never rejected |
+| Update | Append to an existing archive without losing what a receiving tool put there |
+| Camera | Perspective and orthogonal, quaternion to direction and up vector, per-version limits |
+| Units | Any host unit to the metres BCF requires |
+| Identifiers | IFC GUID both ways, and Revit `UniqueId` to IFC GUID with the exporter's own algorithm |
+| Vocabularies | Types, statuses, priorities, labels and stages from one file, with generated constants |
+| Idempotency | A stable topic key that survives a re-run, so a repeated export does not create duplicates |
 
-## Встраивание в свой инструмент
+What it deliberately does **not** do: open models, render snapshots, check
+licences, show windows, or touch the network. All of that belongs to the host.
 
-Библиотека собирается под `netstandard2.0`, не имеет внешних зависимостей
-и ничего не знает про хост. Что она берёт на себя, какие порты реализует
-встраивающий и на какие правила она опирается — [`docs/integration.md`](docs/integration.md).
+## Quick start
 
-Машиночитаемое описание настроек выгрузки —
-[`schemas/api/bcf-export-settings.schema.json`](schemas/api/bcf-export-settings.schema.json).
-Схема сверяется с классом `BcfExportSettings` тестом на каждой сборке: поле,
-добавленное в код и забытое в схеме, роняет сборку.
+```csharp
+var settings = new BcfExportSettings
+{
+    Author = "coordinator@example.com",
+    ProjectName = "Northern Quarter",
+    Version = BcfVersion.Bcf30
+};
 
-## Состав
+using (var file = File.Create(@"C:\exports\clashes.bcfzip"))
+{
+    BcfExportResult result = new BcfClashExporter(source).Export(file, settings);
+
+    if (!result.Succeeded) { /* result.Error, result.Warnings */ }
+}
+```
+
+`source` is your implementation of `IClashSource` — the one port that is
+mandatory. The full contract, including the optional ports, is in
+[`docs/integration.md`](docs/integration.md).
+
+## Installation
+
+A NuGet package (`BimZen.Bcf.Core`) is being prepared. Until it is published,
+reference the project directly:
 
 ```
-Bcf.Core/            модель BCF по спецификации, конвертеры, сериализаторы (netstandard2.0)
+git clone https://github.com/kichnap/bimzen-bcf.git
+dotnet add <your-project> reference bimzen-bcf/Bcf.Core/Bcf.Core.csproj
+```
+
+Non-.NET consumers can use the vocabulary file
+[`bcf-vocabularies/bcf-extensions.json`](bcf-vocabularies/bcf-extensions.json)
+on its own — it is plain JSON and carries no code.
+
+## Repository layout
+
+```
+Bcf.Core/            the BCF model, converters and serializers (netstandard2.0)
 Bcf.Core.Tests/      xUnit, net48 + net8.0
-bcf-vocabularies/    канонический справочник значений — ЕДИНСТВЕННЫЙ источник правды
-schemas/3.0/         XSD из buildingSMART/BCF-XML, ветка release_3_0
-schemas/2.1/         XSD из buildingSMART/BCF-XML, ветка release_2_1
-schemas/api/         машиночитаемое описание настроек выгрузки
-docs/integration.md  договор на встраивание библиотеки в чужой инструмент
-test-data/           эталонные .bcfzip для тестов импорта
+bcf-vocabularies/    the canonical vocabulary — the ONLY source of truth
+schemas/3.0/         XSDs from buildingSMART/BCF-XML, branch release_3_0
+schemas/2.1/         XSDs from buildingSMART/BCF-XML, branch release_2_1
+schemas/api/         machine-readable description of the export settings
+docs/integration.md  the contract for embedding the library in your own tool
+test-data/           reference .bcfzip fixtures for import tests
 ```
 
-## Принципы, которые легко нарушить не заметив
+## Design rules that are easy to break without noticing
 
-- **`Bcf.Core` не знает про Navisworks.** Ни одной ссылки на `Autodesk.Navisworks.Api`:
-  библиотека собирается и тестируется на машине без установленного Navisworks.
-  Данные приходят через узкий порт (`IClashSource`), реализуемый в плагине.
-- **Ноль NuGet-зависимостей в `Bcf.Core`.** На машине координатора рядом с плагином
-  может работать вторая надстройка с этой же библиотекой, в одном процессе. Каждая
-  зависимость удваивает риск `TypeLoadException` при расхождении версий. По той же
-  причине сборка не подписывается строгим именем.
-- **Модель строится по спецификации, а не по структуре zip-архива.** Одни и те же
-  сущности представлены в BCF дважды — XML в файле и JSON по HTTP; модель общая,
-  сериализация сменная.
-- **Значения справочника не хардкодятся.** Константы генерируются из
-  `bcf-vocabularies/bcf-extensions.json`; `extensions.xml` (3.0) и `extension.xsd` (2.1)
-  генерируются оттуда же, а не вкладываются готовыми файлами.
-- **Валидация асимметрична:** строгая на выход, терпимая на вход. Файл, приехавший
-  из BIMcollab или Revizto, законно содержит незнакомые статусы — отвергать его нельзя.
+- **`Bcf.Core` knows nothing about any host.** No reference to any BIM
+  application: the library builds and its tests run on a machine where none
+  is installed. Data arrives through a narrow port, `IClashSource`.
+- **Zero NuGet dependencies in `Bcf.Core`.** The library may end up in the
+  same process as another add-in carrying the same library. Every dependency
+  doubles the chance of a `TypeLoadException` on a version mismatch. For the
+  same reason the assembly is not strong-named.
+- **The model follows the specification, not the shape of the zip archive.**
+  BCF describes the same entities twice — XML in a file and JSON over HTTP.
+  The model is shared; the serialization is swappable.
+- **Vocabulary values are never hard-coded.** Constants are generated from
+  `bcf-vocabularies/bcf-extensions.json`; `extensions.xml` (3.0) and
+  `extensions.xsd` (2.1) are generated from it too, not shipped as ready files.
+- **Validation is asymmetric: strict on write, lenient on read.** A file
+  produced by BIMcollab or Revizto legitimately contains statuses you have
+  never seen. Rejecting it is the fastest way to be known as the tool that
+  "does not understand openBIM".
 
-## Подключение сабмодулем
+## Generating the vocabulary constants
 
-```
-git submodule add https://github.com/kichnap/bimzen-bcf.git bimzen-bcf
-git submodule update --init --recursive
-```
-
-Потребитель обязан падать на сборке с внятным текстом, если сабмодуль не подтянут.
-
-## Сборка и тесты
+Vocabulary values reach the code through the generator only — nobody types
+them by hand:
 
 ```
-dotnet test Bcf.Core.Tests/Bcf.Core.Tests.csproj
+dotnet run --project Bcf.Vocabulary.Generator            # rewrite Bcf.Core/Vocabulary/BcfVocabulary.g.cs
+dotnet run --project Bcf.Vocabulary.Generator -- --check # verify the file is up to date
 ```
 
-Тесты идут на двух целевых фреймворках: `net48` — как в Navisworks, `net8.0` — как
-у будущего агента.
+Forgetting to regenerate is not possible: `VocabularyDriftTests` builds the
+constants again from `bcf-extensions.json` and compares them with the
+committed file, and `NoHardcodedVocabularyTests` makes sure values such as
+`"In Progress"` never appear as string literals in the code.
 
-## Что уже есть в Bcf.Core
+The vocabulary files that go into an archive are assembled from the same
+constants rather than stored ready-made: `ExtensionsWriter.Write30` produces
+`extensions.xml` (BCF 3.0), `ExtensionsWriter.Write21` produces
+`extensions.xsd` (BCF 2.1). The latter redefines types from `markup.xsd`, so
+that schema has to travel inside the archive next to it.
 
-| Область | Классы |
-|---|---|
-| Справочники | `BcfVocabulary` (константы генерируются), `ExtensionsWriter`, `BcfUsers` |
-| Идентификаторы | `IfcGuidConverter` — IFC GUID в обе стороны и Revit UniqueId в IFC GUID |
-| Единицы | `UnitConverter` — единицы документа в метры и обратно |
-| Камера | `CameraConverter`, `Rotation`, `Vector3`, модели камер |
-| Идемпотентность | `StableTopicKey` — ключ, переживающий Reset теста, и выведенный из него GUID |
-| Формат чисел и дат | `BcfNumber` — единственное место, где числа становятся строками |
-| Модель BCF | `BcfTopic`, `BcfComment`, `BcfViewpoint`, `BcfComponent`, камеры — по спецификации, не по структуре архива |
-| Запись архива | `BcfArchiveWriter` (потоком, по одному топику) и две реализации: 3.0 и 2.1 |
-| Чтение архива | `BcfArchiveReader` — терпимый: чужие значения справочника сохраняются и попадают в отчёт |
-| Порт к хосту | `IClashSource` — «дай тесты», «дай коллизии», «дай вид»; реализуется потребителем |
-| Экспорт | `BcfClashExporter` + `BcfExportSettings` — без окон, прогресс через `IProgress`, отмена токеном |
-| Идемпотентность | `StableTopicKey` + `TopicGuidMap` — карта «ключ -> Guid замечания» в JSON рядом с моделью |
-
-## Генерация констант из справочника
-
-Значения справочника попадают в код только через генератор — руками их не пишут:
-
-```
-dotnet run --project Bcf.Vocabulary.Generator            # перезаписать Bcf.Core/Vocabulary/BcfVocabulary.g.cs
-dotnet run --project Bcf.Vocabulary.Generator -- --check # проверить, что файл актуален
-```
-
-Забыть про перегенерацию нельзя: `VocabularyDriftTests` строит константы заново
-из `bcf-extensions.json` и сверяет с закоммиченным файлом, а
-`NoHardcodedVocabularyTests` следит, чтобы значений вроде `"In Progress"`
-не появилось строками в коде — ни здесь, ни в подключившем сабмодуль плагине.
-
-Файлы справочников для архива тоже собираются из констант, а не лежат готовыми:
-`ExtensionsWriter.Write30` даёт `extensions.xml` (BCF 3.0),
-`ExtensionsWriter.Write21` — `extensions.xsd` (BCF 2.1). Второй переопределяет
-типы `markup.xsd` через `redefine`, поэтому `markup.xsd` обязан лежать
-в архиве рядом с ним.
-
-## Эталонные архивы
+## Reference archives
 
 ```
 dotnet run --project Bcf.TestData.Generator
 ```
 
-Собирает фикстуры в `test-data/` настоящим экспортёром и воспроизводимо
-побайтово. Подробности — в `test-data/README.md`.
+Builds the fixtures in `test-data/` with the real exporter, byte-for-byte
+reproducibly. Details in [`test-data/README.md`](test-data/README.md).
 
-## Схемы
+## Schemas
 
-XSD взяты из репозитория buildingSMART `BCF-XML` (ветки `release_3_0` и `release_2_1`)
-и лежат здесь без изменений. В 2.1 файла `extensions.xsd` среди схем нет: там
-справочники объявляются файлом внутри каждого архива, и его генерирует `Bcf.Core`.
-Эталон для сверки — `schemas/2.1/extensions.reference.xsd`.
+The XSDs come from the buildingSMART `BCF-XML` repository (branches
+`release_3_0` and `release_2_1`) and are stored here unchanged. BCF 2.1 has
+no `extensions.xsd` among its schemas: there, vocabularies are declared by a
+file inside each archive, and `Bcf.Core` generates it. The reference copy for
+comparison is `schemas/2.1/extensions.reference.xsd`.
+
+## Building and testing
+
+```
+dotnet test Bcf.Core.Tests/Bcf.Core.Tests.csproj
+```
+
+Tests run on two target frameworks: `net48`, the runtime of desktop BIM
+applications, and `net8.0` for services and background agents.
+
+## Contributing
+
+Repository conventions — language of code and documentation, the bilingual
+XML-doc format, what may and may not be hard-coded — are in
+[`AGENTS.md`](AGENTS.md).
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).
