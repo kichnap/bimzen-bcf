@@ -5,18 +5,30 @@ using System.Linq;
 namespace Bcf.Core.Vocabulary
 {
     /// <summary>
-    /// Проверки значений справочника. Значения и таблицы — в BcfVocabulary.g.cs,
-    /// он генерируется из bcf-vocabularies/bcf-extensions.json.
+    /// Checks against the vocabulary. The values and the tables live in
+    /// BcfVocabulary.g.cs, which is generated from
+    /// bcf-vocabularies/bcf-extensions.json.
     ///
-    /// Валидация асимметрична и это принципиально:
-    /// на выход — строго (<see cref="EnsureTopicStatus"/> и соседи бросают исключение),
-    /// на вход — терпимо (<see cref="IsKnownTopicStatus"/> лишь помечает значение чужим).
+    /// The validation is asymmetric, and that is the point: strict on the way
+    /// out (<see cref="EnsureTopicStatus"/> and its neighbours throw), lenient
+    /// on the way in (<see cref="IsKnownTopicStatus"/> merely marks a value as
+    /// foreign).
+    ///
+    /// Проверки по справочнику. Значения и таблицы лежат в BcfVocabulary.g.cs,
+    /// который генерируется из bcf-vocabularies/bcf-extensions.json.
+    ///
+    /// Проверка асимметрична, и в этом суть: на выход строго
+    /// (<see cref="EnsureTopicStatus"/> и соседи бросают исключение), на вход
+    /// терпимо (<see cref="IsKnownTopicStatus"/> лишь помечает значение чужим).
     /// </summary>
     public static partial class BcfVocabulary
     {
         /// <summary>
-        /// Сравнение wire-значений строгое, с регистром и пробелами:
-        /// "In Progress" не равно "in progress" и не равно "InProgress".
+        /// Wire values are compared strictly, case and spaces included:
+        /// "In Progress" is neither "in progress" nor "InProgress".
+        ///
+        /// Wire-значения сравниваются строго, с учётом регистра и пробелов:
+        /// "In Progress" — это не "in progress" и не "InProgress".
         /// </summary>
         private static readonly StringComparer ValueComparer = StringComparer.Ordinal;
 
@@ -70,46 +82,73 @@ namespace Bcf.Core.Vocabulary
             return Contains(Stages.All, value);
         }
 
-        /// <summary>Строгая проверка типа замечания перед записью.</summary>
+        /// <summary>
+        /// The strict check of a topic type before writing.
+        /// Строгая проверка типа замечания перед записью.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
         public static void EnsureTopicType(string value)
         {
             Ensure("TopicType", value, TopicTypes.All);
         }
 
-        /// <summary>Строгая проверка статуса перед записью.</summary>
+        /// <summary>
+        /// The strict check of a status before writing.
+        /// Строгая проверка статуса перед записью.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
         public static void EnsureTopicStatus(string value)
         {
             Ensure("TopicStatus", value, TopicStatuses.All);
         }
 
-        /// <summary>Строгая проверка приоритета перед записью.</summary>
+        /// <summary>
+        /// The strict check of a priority before writing.
+        /// Строгая проверка приоритета перед записью.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
         public static void EnsurePriority(string value)
         {
             Ensure("Priority", value, Priorities.All);
         }
 
-        /// <summary>Строгая проверка метки перед записью.</summary>
+        /// <summary>
+        /// The strict check of a label before writing.
+        /// Строгая проверка метки перед записью.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
         public static void EnsureTopicLabel(string value)
         {
             Ensure("TopicLabel", value, TopicLabels.All);
         }
 
-        /// <summary>Строгая проверка стадии перед записью.</summary>
+        /// <summary>
+        /// The strict check of a stage before writing.
+        /// Строгая проверка стадии перед записью.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
         public static void EnsureStage(string value)
         {
             Ensure("Stage", value, Stages.All);
         }
 
         /// <summary>
-        /// Статус Clash Detective в TopicStatus BCF.
+        /// A clash-tool status turned into a BCF TopicStatus.
+        /// Статус инструмента коллизий, превращённый в TopicStatus BCF.
         /// </summary>
-        /// <param name="navisworksStatus">Значение ClashResultStatus, например "Approved".</param>
+        /// <param name="navisworksStatus">The clash status, "Approved" for instance.</param>
         /// <param name="overrides">
-        /// Переопределения из диалога экспорта. Приоритетнее дефолтов справочника:
-        /// у Approved две трактовки — «проверено и принято» (Closed, дефолт)
-        /// и «пересечение признано допустимым» (Rejected).
+        /// Overrides from the export settings. They win over the vocabulary
+        /// defaults: Approved has two readings — "verified and accepted"
+        /// (Closed, the default) and "the intersection was accepted as
+        /// tolerable" (Rejected).
+        ///
+        /// Переопределения из настроек выгрузки. Они важнее умолчаний
+        /// справочника: у Approved две трактовки — «проверено и принято»
+        /// (Closed, по умолчанию) и «пересечение признано допустимым»
+        /// (Rejected).
         /// </param>
-        /// <returns>Статус BCF либо null, если сопоставить не удалось.</returns>
+        /// <returns>The BCF status, or null when nothing matched.</returns>
         public static string MapNavisworksStatus(string navisworksStatus, IReadOnlyDictionary<string, string> overrides = null)
         {
             if (string.IsNullOrEmpty(navisworksStatus)) return null;
@@ -126,8 +165,12 @@ namespace Bcf.Core.Vocabulary
         }
 
         /// <summary>
-        /// Русская подпись для UI. Для незнакомого (внешнего) значения возвращает
-        /// его само: в интерфейсе оно показывается как есть, с пометкой «внешнее».
+        /// The display label for a user interface. For a foreign value it
+        /// returns the value itself: the interface shows it as it is, marked as
+        /// external.
+        ///
+        /// Подпись для интерфейса. Для чужого значения возвращает его само:
+        /// интерфейс показывает его как есть, с пометкой «внешнее».
         /// </summary>
         public static string GetRussianLabel(IReadOnlyDictionary<string, string> labels, string value)
         {
@@ -138,7 +181,12 @@ namespace Bcf.Core.Vocabulary
             return labels.TryGetValue(value, out label) ? label : value;
         }
 
-        /// <summary>Разрешён ли переход между статусами по модели жизненного цикла.</summary>
+        /// <summary>
+        /// Whether the lifecycle model allows this transition between statuses.
+        /// Разрешает ли модель жизненного цикла такой переход между статусами.
+        /// </summary>
+        /// <param name="from">The status to move from.</param>
+        /// <param name="to">The status to move to.</param>
         public static bool IsTransitionAllowed(string fromStatus, string toStatus)
         {
             IReadOnlyList<string> allowed;
@@ -167,8 +215,8 @@ namespace Bcf.Core.Vocabulary
             if (Contains(allowed, value)) return;
 
             throw new BcfVocabularyException(
-                "Значение '" + (value ?? "<null>") + "' недопустимо для поля " + field +
-                ". Допустимые значения: " + string.Join(", ", allowed.ToArray()) + ".")
+                "The value '" + (value ?? "<null>") + "' is not allowed for the field " + field +
+                ". Allowed values: " + string.Join(", ", allowed.ToArray()) + ".")
             {
                 Field = field,
                 Value = value

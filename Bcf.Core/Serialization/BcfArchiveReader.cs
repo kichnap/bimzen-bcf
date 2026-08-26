@@ -67,7 +67,7 @@ namespace Bcf.Core.Serialization
                 }
                 catch (Exception ex)
                 {
-                    // Один битый топик не должен обрушить чтение всего архива
+                    // One broken topic must not bring down the whole read
                     result.Warn("Не удалось прочитать '" + entry.FullName + "': " + ex.Message);
                 }
             }
@@ -193,7 +193,7 @@ namespace Bcf.Core.Serialization
                 topic.Index = index;
             }
 
-            // Метки: в 3.0 обёрнуты в Labels/Label, в 2.1 — повторяющиеся Labels
+            // Labels: wrapped in Labels/Label in 3.0, repeated Labels in 2.1
             XElement labelsWrapper = topicElement.Element("Labels");
             if (labelsWrapper != null && labelsWrapper.Elements("Label").Any())
             {
@@ -414,7 +414,7 @@ namespace Bcf.Core.Serialization
                         model.Exceptions.Add(ReadComponent(component));
                     }
 
-                    // Подсказки в 3.0 внутри Visibility, в 2.1 — на уровне Components
+                    // Hints live inside Visibility in 3.0 and at the Components level in 2.1
                     XElement hints = visibility.Element("ViewSetupHints") ?? components.Element("ViewSetupHints");
                     if (hints != null)
                     {
