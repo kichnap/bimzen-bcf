@@ -12,7 +12,14 @@ update.
 
 ## [Unreleased]
 
-Preparing the first public release as a standalone component.
+Nothing yet.
+
+## [1.0.0] - 2026-08-27
+
+The first public release as a standalone component. The library is not new —
+it grew inside a closed product and has been exporting real clash sets for
+months. What is new is that it now stands on its own: MIT, no host, no
+dependencies, and a package anyone can take.
 
 ### Added
 
@@ -69,3 +76,6 @@ public release is not an empty page.
   units to metres, camera orientation from a quaternion.
 - **Vocabularies** generated from a single JSON file, with tests that fail
   the build if the generated constants drift from it.
+
+[Unreleased]: https://github.com/kichnap/bimzen-bcf/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.0.0
