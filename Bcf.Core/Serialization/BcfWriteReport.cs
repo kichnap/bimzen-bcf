@@ -13,10 +13,22 @@ namespace Bcf.Core.Serialization
         private readonly List<string> _warnings = new List<string>();
         private readonly HashSet<string> _droppedFields = new HashSet<string>(StringComparer.Ordinal);
 
+        /// <summary>
+        /// How many topics reached the archive.
+        /// Сколько замечаний попало в архив.
+        /// </summary>
         public int TopicsWritten { get; internal set; }
 
+        /// <summary>
+        /// How many viewpoints reached the archive.
+        /// Сколько точек зрения попало в архив.
+        /// </summary>
         public int ViewpointsWritten { get; internal set; }
 
+        /// <summary>
+        /// How many snapshots reached the archive.
+        /// Сколько снимков попало в архив.
+        /// </summary>
         public int SnapshotsWritten { get; internal set; }
 
         /// <summary>Записей, перенесённых из обновляемого архива как есть.</summary>
@@ -54,6 +66,7 @@ namespace Bcf.Core.Serialization
             }
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             return string.Format(

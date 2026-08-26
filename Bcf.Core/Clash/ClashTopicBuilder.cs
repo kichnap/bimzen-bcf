@@ -38,14 +38,21 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
-        /// Строит замечание.
+        /// Builds a topic out of one or more clashes.
+        /// Строит замечание из одной или нескольких коллизий.
         /// </summary>
-        /// <param name="stableKey">Устойчивый ключ — из него выводятся идентификаторы комментариев.</param>
+        /// <param name="stableKey">The stable key; comment identifiers are derived from it.</param>
         /// <param name="topicGuid">
+        /// The topic identifier: issued earlier or deterministic. Clash
+        /// identifiers are regenerated when a test is reset, so they cannot be
+        /// relied upon.
+        ///
         /// Идентификатор замечания: ранее выданный либо детерминированный.
-        /// Идентификаторы коллизий Navisworks пересоздаются при Reset теста,
-        /// поэтому опираться на них нельзя.
+        /// Идентификаторы коллизий пересоздаются при сбросе проверки, поэтому
+        /// опираться на них нельзя.
         /// </param>
+        /// <param name="title">The topic title.</param>
+        /// <param name="clashes">The clashes this topic covers; at least one.</param>
         public BcfTopic Build(string stableKey, Guid topicGuid, string title, IReadOnlyList<ClashItem> clashes)
         {
             if (clashes == null || clashes.Count == 0)

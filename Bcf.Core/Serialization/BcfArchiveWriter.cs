@@ -31,6 +31,12 @@ namespace Bcf.Core.Serialization
         private readonly HashSet<string> _declaredLabels = new HashSet<string>(StringComparer.Ordinal);
         private bool _completed;
 
+        /// <summary>
+        /// Opens an archive for writing over the destination stream.
+        /// Открывает архив для записи поверх потока назначения.
+        /// </summary>
+        /// <param name="destination">Where the archive is written; the caller owns the stream.</param>
+        /// <param name="options">What to write and how.</param>
         protected BcfArchiveWriter(Stream destination, BcfWriteOptions options)
         {
             if (destination == null) throw new ArgumentNullException(nameof(destination));
@@ -192,12 +198,18 @@ namespace Bcf.Core.Serialization
             _completed = true;
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Releases the archive. Complete() is deliberately not called here.
+        /// Освобождает архив. Complete() здесь намеренно не вызывается.
+        /// </summary>
+        /// <param name="disposing">True when called from Dispose rather than from a finalizer.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposing) return;
@@ -219,8 +231,15 @@ namespace Bcf.Core.Serialization
         /// <summary>Пишет project.bcfp.</summary>
         protected abstract void WriteProjectFile(XmlWriter writer);
 
-        /// <summary>Пишет объявление справочников: extensions.xml в 3.0, extensions.xsd в 2.1.</summary>
-        /// <param name="extra">Значения, приехавшие с перенесёнными замечаниями.</param>
+        /// <summary>
+        /// Writes the vocabulary declaration: extensions.xml in 3.0,
+        /// extensions.xsd in 2.1.
+        ///
+        /// Пишет объявление справочников: extensions.xml в 3.0,
+        /// extensions.xsd в 2.1.
+        /// </summary>
+        /// <param name="users">The people met while writing, already normalised.</param>
+        /// <param name="extra">Values that arrived with the topics carried over.</param>
         protected abstract void WriteExtensions(IReadOnlyList<string> users, BcfExtraVocabulary extra);
 
         /// <summary>Создаёт запись архива и отдаёт поток для записи.</summary>

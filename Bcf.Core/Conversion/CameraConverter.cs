@@ -107,11 +107,21 @@ namespace Bcf.Core.Conversion
             };
         }
 
+        /// <summary>
+        /// Radians to degrees.
+        /// Радианы в градусы.
+        /// </summary>
+        /// <param name="radians">The angle in radians.</param>
         public static double RadiansToDegrees(double radians)
         {
             return radians * 180.0 / Math.PI;
         }
 
+        /// <summary>
+        /// Degrees to radians.
+        /// Градусы в радианы.
+        /// </summary>
+        /// <param name="degrees">The angle in degrees.</param>
         public static double DegreesToRadians(double degrees)
         {
             return degrees * Math.PI / 180.0;

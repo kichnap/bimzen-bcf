@@ -47,6 +47,12 @@ namespace Bcf.Core.Clash
         /// <summary>Появились ли новые записи с момента загрузки.</summary>
         public bool IsDirty { get; private set; }
 
+        /// <summary>
+        /// Looks up the identifier issued for this key earlier.
+        /// Ищет идентификатор, выданный этому ключу раньше.
+        /// </summary>
+        /// <param name="key">The stable topic key.</param>
+        /// <param name="guid">The identifier that was found.</param>
         public bool TryGet(string key, out Guid guid)
         {
             if (string.IsNullOrEmpty(key))
@@ -58,6 +64,12 @@ namespace Bcf.Core.Clash
             return _topics.TryGetValue(key, out guid);
         }
 
+        /// <summary>
+        /// Remembers the identifier for this key.
+        /// Запоминает идентификатор за этим ключом.
+        /// </summary>
+        /// <param name="key">The stable topic key.</param>
+        /// <param name="guid">The identifier to keep.</param>
         public void Remember(string key, Guid guid)
         {
             if (string.IsNullOrEmpty(key)) return;
@@ -205,11 +217,23 @@ namespace Bcf.Core.Clash
     {
         private readonly Dictionary<string, Guid> _topics = new Dictionary<string, Guid>(StringComparer.Ordinal);
 
+        /// <summary>
+        /// Looks up the identifier issued for this key earlier.
+        /// Ищет идентификатор, выданный этому ключу раньше.
+        /// </summary>
+        /// <param name="key">The stable topic key.</param>
+        /// <param name="guid">The identifier that was found.</param>
         public bool TryGet(string key, out Guid guid)
         {
             return _topics.TryGetValue(key ?? string.Empty, out guid);
         }
 
+        /// <summary>
+        /// Remembers the identifier for this key.
+        /// Запоминает идентификатор за этим ключом.
+        /// </summary>
+        /// <param name="key">The stable topic key.</param>
+        /// <param name="guid">The identifier to keep.</param>
         public void Remember(string key, Guid guid)
         {
             if (!string.IsNullOrEmpty(key)) _topics[key] = guid;

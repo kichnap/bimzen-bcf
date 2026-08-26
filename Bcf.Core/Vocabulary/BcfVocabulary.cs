@@ -20,26 +20,51 @@ namespace Bcf.Core.Vocabulary
         /// </summary>
         private static readonly StringComparer ValueComparer = StringComparer.Ordinal;
 
+        /// <summary>
+        /// Whether the topic type belongs to the vocabulary.
+        /// Принадлежит ли тип замечания справочнику.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
         public static bool IsKnownTopicType(string value)
         {
             return Contains(TopicTypes.All, value);
         }
 
+        /// <summary>
+        /// Whether the status belongs to the vocabulary.
+        /// Принадлежит ли статус справочнику.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
         public static bool IsKnownTopicStatus(string value)
         {
             return Contains(TopicStatuses.All, value);
         }
 
+        /// <summary>
+        /// Whether the priority belongs to the vocabulary.
+        /// Принадлежит ли приоритет справочнику.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
         public static bool IsKnownPriority(string value)
         {
             return Contains(Priorities.All, value);
         }
 
+        /// <summary>
+        /// Whether the label belongs to the vocabulary.
+        /// Принадлежит ли метка справочнику.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
         public static bool IsKnownTopicLabel(string value)
         {
             return Contains(TopicLabels.All, value);
         }
 
+        /// <summary>
+        /// Whether the stage belongs to the vocabulary.
+        /// Принадлежит ли стадия справочнику.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
         public static bool IsKnownStage(string value)
         {
             return Contains(Stages.All, value);

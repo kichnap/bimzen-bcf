@@ -61,12 +61,28 @@ namespace Bcf.Core.Clash
         /// </summary>
         public IList<string> IncludedClashStatuses { get; set; } = new List<string> { "New", "Active" };
 
+        /// <summary>
+        /// How clashes are folded into topics.
+        /// Как коллизии складываются в замечания.
+        /// </summary>
         public ClashGroupingMode Grouping { get; set; } = ClashGroupingMode.GroupPerTopic;
 
+        /// <summary>
+        /// Whether snapshots are captured — the slowest part of an export.
+        /// Снимать ли изображения — самая медленная часть выгрузки.
+        /// </summary>
         public bool IncludeSnapshots { get; set; } = true;
 
+        /// <summary>
+        /// The snapshot width in pixels.
+        /// Ширина снимка в пикселях.
+        /// </summary>
         public int SnapshotWidth { get; set; } = 800;
 
+        /// <summary>
+        /// The snapshot height in pixels.
+        /// Высота снимка в пикселях.
+        /// </summary>
         public int SnapshotHeight { get; set; } = 600;
 
         /// <summary>
@@ -108,10 +124,22 @@ namespace Bcf.Core.Clash
         /// </summary>
         public IDictionary<string, string> StatusMapping { get; set; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
+        /// <summary>
+        /// The type given to topics made from clashes.
+        /// Тип, который получают замечания из коллизий.
+        /// </summary>
         public string TopicType { get; set; } = BcfVocabulary.TopicTypes.Default;
 
+        /// <summary>
+        /// The priority given to every topic.
+        /// Приоритет, который получает каждое замечание.
+        /// </summary>
         public string Priority { get; set; } = BcfVocabulary.Priorities.Default;
 
+        /// <summary>
+        /// The project stage recorded in every topic.
+        /// Стадия проекта, записываемая в каждое замечание.
+        /// </summary>
         public string Stage { get; set; } = BcfVocabulary.Stages.Default;
 
         /// <summary>
@@ -159,6 +187,10 @@ namespace Bcf.Core.Clash
         /// <summary>Переносить ли Assigned To из Clash Detective.</summary>
         public bool CarryAssignedTo { get; set; } = true;
 
+        /// <summary>
+        /// Whether comments are carried over from the source.
+        /// Переносить ли комментарии из источника.
+        /// </summary>
         public bool IncludeComments { get; set; } = true;
 
         /// <summary>Включать ли расстояние и глубину проникновения в описание.</summary>
@@ -186,6 +218,10 @@ namespace Bcf.Core.Clash
         /// <summary>Имя и идентификатор проекта для project.bcfp.</summary>
         public string ProjectName { get; set; }
 
+        /// <summary>
+        /// The project identifier. Empty — the host derives one from the document path.
+        /// Идентификатор проекта. Пусто — хост выводит его из пути документа.
+        /// </summary>
         public string ProjectId { get; set; }
 
         /// <summary>Куда пишется архив.</summary>
@@ -262,10 +298,20 @@ namespace Bcf.Core.Clash
     /// <summary>Правило вывода метки дисциплины из имени проверки.</summary>
     public class DisciplineLabelRule
     {
+        /// <summary>
+        /// Creates an empty rule; the serializer needs this constructor.
+        /// Создаёт пустое правило; этот конструктор нужен сериализатору.
+        /// </summary>
         public DisciplineLabelRule()
         {
         }
 
+        /// <summary>
+        /// Creates a rule from a substring and the label it implies.
+        /// Создаёт правило из подстроки и метки, которую она означает.
+        /// </summary>
+        /// <param name="substring">The substring to look for in a test name.</param>
+        /// <param name="label">The label from the vocabulary.</param>
         public DisciplineLabelRule(string substring, string label)
         {
             Substring = substring;

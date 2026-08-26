@@ -27,6 +27,11 @@ namespace Bcf.Core.Serialization
     /// </summary>
     public static class BcfArchiveReader
     {
+        /// <summary>
+        /// Reads an archive from a stream.
+        /// Читает архив из потока.
+        /// </summary>
+        /// <param name="archiveStream">The archive; the stream stays with the caller.</param>
         public static BcfReadResult Read(Stream archiveStream)
         {
             if (archiveStream == null) throw new ArgumentNullException(nameof(archiveStream));

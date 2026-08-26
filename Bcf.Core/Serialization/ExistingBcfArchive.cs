@@ -155,6 +155,7 @@ namespace Bcf.Core.Serialization
             return copied;
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
             _archive.Dispose();
@@ -225,6 +226,7 @@ namespace Bcf.Core.Serialization
             return string.Equals(entryName, name, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             return string.Format(

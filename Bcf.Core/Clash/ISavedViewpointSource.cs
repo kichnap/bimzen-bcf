@@ -35,11 +35,19 @@ namespace Bcf.Core.Clash
         /// </summary>
         public string Id { get; set; }
 
+        /// <summary>
+        /// The name of the saved view as a person sees it.
+        /// Имя сохранённого вида, каким его видит человек.
+        /// </summary>
         public string Name { get; set; }
 
         /// <summary>Путь папок до вида: «Этаж 3 / ОВ». Пусто для видов в корне.</summary>
         public string FolderPath { get; set; }
 
+        /// <summary>
+        /// When the view was created, as far as the host knows.
+        /// Когда вид был создан, насколько это известно хосту.
+        /// </summary>
         public DateTimeOffset? CreatedDate { get; set; }
 
         /// <summary>Комментарии вида — переносятся в замечание как есть.</summary>

@@ -18,8 +18,16 @@ namespace Bcf.Core.Serialization
         /// <summary>Проект из project.bcfp, если он есть.</summary>
         public BcfProject Project { get; internal set; }
 
+        /// <summary>
+        /// The topics read from the archive.
+        /// Замечания, прочитанные из архива.
+        /// </summary>
         public IList<BcfTopic> Topics { get; } = new List<BcfTopic>();
 
+        /// <summary>
+        /// What went wrong while reading without stopping the read.
+        /// Что пошло не так при чтении, не остановив его.
+        /// </summary>
         public IReadOnlyList<string> Warnings
         {
             get { return _warnings; }
@@ -96,6 +104,7 @@ namespace Bcf.Core.Serialization
         /// <summary>Первый топик с этим значением — чтобы было куда посмотреть.</summary>
         public Guid FirstTopic { get; internal set; }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             return Field + " = '" + Value + "' (" + Count + ")";

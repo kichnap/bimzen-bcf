@@ -861,12 +861,26 @@ namespace Bcf.Core.Clash
             return ResolveTopicGuid(key, null, result);
         }
 
+        /// <summary>
+        /// The topic identifier: the one issued earlier when it is known,
+        /// otherwise a deterministic one derived from the key.
+        ///
+        /// Идентификатор замечания: ранее выданный, если он известен, иначе
+        /// детерминированный из ключа.
+        /// </summary>
+        /// <param name="key">The stable key of this topic.</param>
         /// <param name="legacyKey">
+        /// The key this topic was counted by in earlier versions. If an
+        /// identifier was issued for it, that identifier moves to the new key:
+        /// changing the rule must not turn into a full set of duplicates at
+        /// the receiving end.
+        ///
         /// Ключ, которым это замечание считалось в прежних версиях. Если
         /// идентификатор выдан на него, он переносится на новый ключ: смена
         /// правила счёта не должна оборачиваться полным комплектом дублей
         /// в приёмнике.
         /// </param>
+        /// <param name="result">Where a reuse is counted.</param>
         private Guid ResolveTopicGuid(string key, string legacyKey, BcfExportResult result)
         {
             Guid guid;

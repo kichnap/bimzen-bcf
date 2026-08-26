@@ -13,10 +13,26 @@ namespace Bcf.Core.Serialization
     /// </summary>
     public static class BcfEntryNames
     {
+        /// <summary>
+        /// The name of the version file at the archive root.
+        /// Имя файла версии в корне архива.
+        /// </summary>
         public const string Version = "bcf.version";
+        /// <summary>
+        /// The name of the project file at the archive root.
+        /// Имя файла проекта в корне архива.
+        /// </summary>
         public const string Project = "project.bcfp";
+        /// <summary>
+        /// The name of the markup file inside a topic folder.
+        /// Имя файла разметки внутри папки замечания.
+        /// </summary>
         public const string Markup = "markup.bcf";
 
+        /// <summary>
+        /// The extension of a viewpoint file.
+        /// Расширение файла точки зрения.
+        /// </summary>
         public const string ViewpointExtension = ".bcfv";
 
         /// <summary>Папка топика.</summary>
