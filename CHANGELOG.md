@@ -30,6 +30,10 @@ Preparing the first public release as a standalone component.
   projects and for the generated `BcfVocabulary.g.cs`, whose per-value labels
   now come from `labels.en` alongside `labels.ru`.
 - NuGet package metadata for `BimZen.Bcf.Core`.
+- Publishing to nuget.org through Trusted Publishing: a version tag runs
+  `release.yml`, which trades a GitHub OIDC token for a key that lives an
+  hour. No long-lived key is stored in this repository, and none should be.
+  `docs/releasing.md` covers the one-time setup.
 
 ### Changed
 

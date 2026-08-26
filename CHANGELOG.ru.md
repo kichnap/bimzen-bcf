@@ -29,6 +29,10 @@ Changelog](https://keepachangelog.com/ru/1.1.0/), версионирование
   проектах-генераторах и в генерируемом `BcfVocabulary.g.cs`, где подписи
   значений теперь берутся из `labels.en` наравне с `labels.ru`.
 - Метаданные пакета NuGet `BimZen.Bcf.Core`.
+- Публикация на nuget.org через Trusted Publishing: тег версии запускает
+  `release.yml`, который меняет токен OIDC от GitHub на ключ со сроком
+  жизни в час. Долгоживущего ключа в репозитории нет и быть не должно.
+  Разовая настройка — в `docs/releasing.ru.md`.
 
 ### Изменено
 
