@@ -200,6 +200,23 @@ namespace Bcf.Core.Tests
         }
 
         [Fact]
+        public void ElementIdOrigins_AreCounted()
+        {
+            // Прочитанный из свойства IFC идентификатор совпадёт с исходной
+            // моделью IFC всегда, вычисленный из UniqueId — почти всегда,
+            // внутренний Navisworks — никогда. Тому, кто сверяет выгрузку
+            // с IFC, нужно знать пропорцию
+            ClashItem clash = Clash(null, "стена-1", "труба-1");
+            clash.Elements[0].Origin = ElementIdOrigin.IfcProperty;
+            clash.Elements[1].Origin = ElementIdOrigin.InstanceGuid;
+
+            BcfExportResult result = Export(Settings(), new FakeSource(clash));
+
+            Assert.Equal(1, result.ElementIdOrigins["IfcProperty"]);
+            Assert.Equal(1, result.ElementIdOrigins["InstanceGuid"]);
+        }
+
+        [Fact]
         public void GroupName_ReachesTheDescription()
         {
             BcfExportSettings settings = Settings();

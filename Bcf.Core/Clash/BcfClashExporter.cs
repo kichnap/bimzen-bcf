@@ -736,6 +736,11 @@ namespace Bcf.Core.Clash
                 int count;
                 result.ElementIdSources.TryGetValue(source, out count);
                 result.ElementIdSources[source] = count + 1;
+
+                string origin = element.Origin.ToString();
+
+                result.ElementIdOrigins.TryGetValue(origin, out count);
+                result.ElementIdOrigins[origin] = count + 1;
             }
         }
 

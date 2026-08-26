@@ -71,6 +71,17 @@ namespace Bcf.Core.Clash
         /// </summary>
         public IDictionary<string, int> ElementIdSources { get; } = new Dictionary<string, int>(StringComparer.Ordinal);
 
+        /// <summary>
+        /// Чем опознаны элементы и сколько раз: ключ — значение
+        /// <see cref="ElementIdOrigin"/>, значение — число элементов.
+        ///
+        /// Разница между «прочитан из свойства IFC» и «вычислен из Revit
+        /// UniqueId» принципиальна для того, кто сверяет выгрузку с IFC той же
+        /// модели: первый совпадёт с файлом IFC всегда, второй — только там,
+        /// где экспортёр Revit не разрезал элемент и не породил сущность сам.
+        /// </summary>
+        public IDictionary<string, int> ElementIdOrigins { get; } = new Dictionary<string, int>(StringComparer.Ordinal);
+
         public int SnapshotsCaptured { get; internal set; }
 
         /// <summary>

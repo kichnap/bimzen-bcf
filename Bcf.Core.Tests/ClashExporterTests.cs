@@ -148,7 +148,11 @@ namespace Bcf.Core.Tests
             var source = new FakeClashSource(Enumerable.Range(0, 60).Select(i => Clash("Этаж " + i, "New")).ToArray());
 
             var seen = new List<double>();
-            var progress = new Progress<BcfExportProgress>(p => seen.Add(p.Fraction));
+
+            // Штатный Progress<T> доставляет вызовы через контекст синхронизации,
+            // то есть в другом потоке и когда придётся: список успевал остаться
+            // пустым к моменту проверки. Экспорт синхронный — приёмник тоже
+            var progress = new ImmediateProgress(p => seen.Add(p.Fraction));
 
             Export(source, Settings(), progress);
 
@@ -447,6 +451,22 @@ namespace Bcf.Core.Tests
         /// Источник-заглушка. Ровно то, ради чего порт узкий: экспорт целиком
         /// проверяется без Navisworks.
         /// </summary>
+        /// <summary>Приёмник прогресса, выполняющий обработчик сразу и в том же потоке.</summary>
+        private sealed class ImmediateProgress : IProgress<BcfExportProgress>
+        {
+            private readonly Action<BcfExportProgress> _handler;
+
+            public ImmediateProgress(Action<BcfExportProgress> handler)
+            {
+                _handler = handler;
+            }
+
+            public void Report(BcfExportProgress value)
+            {
+                _handler(value);
+            }
+        }
+
         private sealed class FakeClashSource : IClashSource
         {
             private readonly List<ClashItem> _clashes;
