@@ -5,17 +5,26 @@ using Bcf.Core.Model;
 namespace Bcf.Core.Serialization
 {
     /// <summary>
-    /// Итог чтения архива: замечания плюс всё, что стоит показать пользователю.
+    /// The outcome of reading an archive: the topics, plus everything worth
+    /// showing to the user.
+    ///
+    /// Итог чтения архива: замечания и всё, что стоит показать пользователю.
     /// </summary>
     public class BcfReadResult
     {
         private readonly List<string> _warnings = new List<string>();
         private readonly List<BcfExternalValue> _externalValues = new List<BcfExternalValue>();
 
-        /// <summary>Версия, объявленная в bcf.version.</summary>
+        /// <summary>
+        /// The version declared in bcf.version.
+        /// Версия, объявленная в bcf.version.
+        /// </summary>
         public BcfVersion Version { get; internal set; } = BcfVersion.Bcf30;
 
-        /// <summary>Проект из project.bcfp, если он есть.</summary>
+        /// <summary>
+        /// The project from project.bcfp, when the archive carries one.
+        /// Проект из project.bcfp, если архив его несёт.
+        /// </summary>
         public BcfProject Project { get; internal set; }
 
         /// <summary>
@@ -34,10 +43,16 @@ namespace Bcf.Core.Serialization
         }
 
         /// <summary>
-        /// Значения, которых нет в справочнике. Не ошибка: стандарт не фиксирует
-        /// словари, и файл из BIMcollab, Revizto или Solibri законно приходит
-        /// со своими статусами. Значения сохраняются как есть, а пользователь
-        /// видит их списком и может сопоставить вручную.
+        /// Values that are not in the vocabulary. Not an error: the standard
+        /// does not fix the vocabularies, and a file from BIMcollab, Revizto or
+        /// Solibri legitimately arrives with statuses of its own. The values
+        /// are kept as they are, and the user sees them as a list and can map
+        /// them by hand.
+        ///
+        /// Значения, которых нет в справочнике. Не ошибка: стандарт словари
+        /// не фиксирует, и файл из BIMcollab, Revizto или Solibri законно
+        /// приходит со своими статусами. Значения сохраняются как есть,
+        /// пользователь видит их списком и может сопоставить вручную.
         /// </summary>
         public IReadOnlyList<BcfExternalValue> ExternalValues
         {
@@ -74,34 +89,61 @@ namespace Bcf.Core.Serialization
     }
 
     /// <summary>
+    /// What an archive holds, without parsing the topics. Enough to show the
+    /// user the file they picked and to decide whether it can be appended to.
+    ///
     /// Что лежит в архиве, без разбора замечаний. Хватает, чтобы показать
     /// пользователю выбранный файл и решить, можно ли в него дописывать.
     /// </summary>
     public class BcfArchiveSummary
     {
-        /// <summary>Версия из bcf.version.</summary>
+        /// <summary>
+        /// The version from bcf.version.
+        /// Версия из bcf.version.
+        /// </summary>
         public BcfVersion Version { get; internal set; } = BcfVersion.Bcf30;
 
-        /// <summary>Есть ли в архиве bcf.version вообще.</summary>
+        /// <summary>
+        /// Whether the archive carries a bcf.version file at all.
+        /// Есть ли в архиве файл bcf.version вообще.
+        /// </summary>
         public bool HasVersionFile { get; internal set; }
 
-        /// <summary>Сколько в архиве замечаний.</summary>
+        /// <summary>
+        /// How many topics the archive holds.
+        /// Сколько в архиве замечаний.
+        /// </summary>
         public int TopicCount { get; internal set; }
     }
 
-    /// <summary>Незнакомое значение справочника, встреченное при чтении.</summary>
+    /// <summary>
+    /// A vocabulary value met while reading that we do not know.
+    /// Незнакомое значение справочника, встреченное при чтении.
+    /// </summary>
     public class BcfExternalValue
     {
-        /// <summary>Поле: TopicStatus, TopicType, Priority, Stage или Label.</summary>
+        /// <summary>
+        /// The field: TopicStatus, TopicType, Priority, Stage or Label.
+        /// Поле: TopicStatus, TopicType, Priority, Stage или Label.
+        /// </summary>
         public string Field { get; internal set; }
 
-        /// <summary>Значение как оно записано в файле.</summary>
+        /// <summary>
+        /// The value exactly as the file spells it.
+        /// Значение ровно в том виде, в каком оно записано в файле.
+        /// </summary>
         public string Value { get; internal set; }
 
-        /// <summary>Сколько раз встретилось.</summary>
+        /// <summary>
+        /// How many times it was met.
+        /// Сколько раз оно встретилось.
+        /// </summary>
         public int Count { get; internal set; }
 
-        /// <summary>Первый топик с этим значением — чтобы было куда посмотреть.</summary>
+        /// <summary>
+        /// The first topic carrying it — so that there is somewhere to look.
+        /// Первое замечание с этим значением — чтобы было куда посмотреть.
+        /// </summary>
         public Guid FirstTopic { get; internal set; }
 
         /// <inheritdoc />

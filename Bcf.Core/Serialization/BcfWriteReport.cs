@@ -5,8 +5,12 @@ using System.Globalization;
 namespace Bcf.Core.Serialization
 {
     /// <summary>
-    /// Что произошло при записи архива. Отдаётся пользователю: он должен знать,
-    /// что теряет при выгрузке в 2.1 и где данные не поместились в формат.
+    /// What happened while the archive was written. It reaches the user: they
+    /// have to know what an export to 2.1 costs them and where the data did not
+    /// fit into the format.
+    ///
+    /// Что произошло при записи архива. Попадает к пользователю: он должен
+    /// знать, чего стоит выгрузка в 2.1 и где данные не поместились в формат.
     /// </summary>
     public class BcfWriteReport
     {
@@ -31,19 +35,29 @@ namespace Bcf.Core.Serialization
         /// </summary>
         public int SnapshotsWritten { get; internal set; }
 
-        /// <summary>Записей, перенесённых из обновляемого архива как есть.</summary>
+        /// <summary>
+        /// Entries carried over from the archive being updated, unchanged.
+        /// Записи, перенесённые из обновляемого архива без изменений.
+        /// </summary>
         public int EntriesCopied { get; internal set; }
 
-        /// <summary>Замечания пользователю в порядке появления.</summary>
+        /// <summary>
+        /// Notes for the user, in the order they appeared.
+        /// Замечания пользователю в порядке появления.
+        /// </summary>
         public IReadOnlyList<string> Warnings
         {
             get { return _warnings; }
         }
 
         /// <summary>
+        /// Fields dropped because of the limits of the format version. A set
+        /// rather than a list: across five thousand topics the same message
+        /// must not repeat five thousand times.
+        ///
         /// Поля, отброшенные из-за ограничений версии формата. Множество,
-        /// а не список: на пяти тысячах топиков одно и то же сообщение
-        /// не должно повторяться пять тысяч раз.
+        /// а не список: на пяти тысячах замечаний одно и то же сообщение
+        /// не должно повториться пять тысяч раз.
         /// </summary>
         public IReadOnlyCollection<string> DroppedFields
         {
@@ -62,7 +76,7 @@ namespace Bcf.Core.Serialization
         {
             if (_droppedFields.Add(field))
             {
-                Warn("Поле " + field + " не переносится: " + reason);
+                Warn("The field " + field + " is not carried over: " + reason);
             }
         }
 
@@ -71,7 +85,7 @@ namespace Bcf.Core.Serialization
         {
             return string.Format(
                 CultureInfo.InvariantCulture,
-                "Топиков: {0}, точек зрения: {1}, снимков: {2}, предупреждений: {3}",
+                "Topics: {0}, viewpoints: {1}, snapshots: {2}, warnings: {3}",
                 TopicsWritten, ViewpointsWritten, SnapshotsWritten, _warnings.Count);
         }
     }
