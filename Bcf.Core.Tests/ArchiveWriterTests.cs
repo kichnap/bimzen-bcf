@@ -225,7 +225,7 @@ namespace Bcf.Core.Tests
 
             Assert.Contains("ServerAssignedId", report.DroppedFields);
             Assert.Contains("AspectRatio", report.DroppedFields);
-            Assert.Contains(report.Warnings, w => w.Contains("без текста"));
+            Assert.Contains(report.Warnings, w => w.Contains("without text"));
         }
 
         [Fact]
@@ -241,7 +241,7 @@ namespace Bcf.Core.Tests
                 archive, BcfEntryNames.ViewpointEntry(topic.Guid, topic.Viewpoints[0].Guid));
 
             Assert.Contains("<FieldOfView>60</FieldOfView>", viewpoint, StringComparison.Ordinal);
-            Assert.Contains(report.Warnings, w => w.Contains("подрезан"));
+            Assert.Contains(report.Warnings, w => w.Contains("clamped"));
             Assert.Empty(TestData.Validate(viewpoint, TestData.SchemaPath(BcfVersion.Bcf21, "visinfo.xsd")));
         }
 

@@ -10,15 +10,25 @@ using Bcf.Core.Vocabulary;
 namespace Bcf.Core.Serialization
 {
     /// <summary>
+    /// The BCF 2.1 serializer — for receiving tools where 3.0 is not supported
+    /// everywhere. Not a stub: it is complete, but the format can hold less, and
+    /// whatever does not fit goes into the report instead of vanishing quietly.
+    ///
+    /// The markup is built along different lines here: comments and viewpoints
+    /// sit next to Topic rather than inside it, labels and references are
+    /// written as repeated elements without a wrapper, and the vocabularies are
+    /// declared by an extensions.xsd schema that has to travel in the archive
+    /// together with markup.xsd — it redefines the types from exactly there.
+    ///
     /// Сериализатор BCF 2.1 — для приёмников, где 3.0 поддержан не везде.
     /// Не заглушка: реализован полностью, но у формата меньше возможностей,
     /// и всё, что не помещается, попадает в отчёт, а не исчезает молча.
     ///
-    /// Устройство markup здесь принципиально другое: комментарии и точки зрения
-    /// лежат не внутри Topic, а рядом с ним, метки и ссылки пишутся
-    /// повторяющимися элементами без обёрток, а справочники объявляются
-    /// схемой extensions.xsd, которую надо положить в архив вместе с markup.xsd —
-    /// она переопределяет типы именно оттуда.
+    /// Разметка устроена принципиально иначе: комментарии и точки зрения лежат
+    /// рядом с Topic, а не внутри него, метки и ссылки пишутся повторяющимися
+    /// элементами без обёрток, а справочники объявляются схемой extensions.xsd,
+    /// которую надо положить в архив вместе с markup.xsd — типы она
+    /// переопределяет именно оттуда.
     /// </summary>
     internal sealed class Bcf21ArchiveWriter : BcfArchiveWriter
     {
@@ -54,7 +64,8 @@ namespace Bcf.Core.Serialization
                 writer.WriteEndElement();
             }
 
-            // Элемент обязателен по схеме: он и связывает архив с объявлением справочников
+            // The schema demands this element: it is what ties the archive to
+            // the vocabulary declaration
             writer.WriteElementString("ExtensionSchema", ExtensionsWriter.Bcf21FileName);
 
             writer.WriteEndElement();
@@ -67,9 +78,9 @@ namespace Bcf.Core.Serialization
                 ExtensionsWriter.Write21(stream, users, extra);
             }
 
-            // extensions.xsd переопределяет типы markup.xsd через redefine,
-            // поэтому сама схема обязана лежать в архиве рядом. Так же устроен
-            // эталонный архив MaximumInformation у buildingSMART.
+            // extensions.xsd redefines the types of markup.xsd, so that schema
+            // has to lie in the archive beside it. The buildingSMART reference
+            // archive MaximumInformation is built the same way.
             WriteResourceEntry(
                 ExtensionsWriter.Bcf21RedefinedSchema,
                 EmbeddedResources.Bcf21SchemaPrefix + ExtensionsWriter.Bcf21RedefinedSchema);
@@ -93,7 +104,7 @@ namespace Bcf.Core.Serialization
 
             writer.WriteStartElement("Header");
 
-            // В 2.1 File лежит прямо в Header, без обёртки Files
+            // In 2.1 File sits directly in Header, with no Files wrapper
             foreach (BcfFile file in topic.Files)
             {
                 writer.WriteStartElement("File");
@@ -122,7 +133,7 @@ namespace Bcf.Core.Serialization
 
             if (!string.IsNullOrWhiteSpace(topic.ServerAssignedId))
             {
-                Report.Drop("ServerAssignedId", "в BCF 2.1 такого атрибута нет");
+                Report.Drop("ServerAssignedId", "BCF 2.1 has no such attribute");
             }
 
             foreach (string link in topic.ReferenceLinks)
@@ -135,7 +146,7 @@ namespace Bcf.Core.Serialization
 
             if (topic.Index.HasValue) writer.WriteElementString("Index", BcfNumber.Format(topic.Index.Value));
 
-            // Метки в 2.1 — повторяющиеся элементы Labels, без обёртки
+            // Labels in 2.1 are repeated Labels elements, with no wrapper
             foreach (string label in topic.Labels)
             {
                 WriteOptionalElement(writer, "Labels", label);
@@ -166,9 +177,9 @@ namespace Bcf.Core.Serialization
             {
                 if (string.IsNullOrWhiteSpace(comment.Text))
                 {
-                    // В 2.1 текст комментария обязателен, в 3.0 — нет.
-                    // Пустой комментарий сделал бы архив невалидным.
-                    Report.Warn("Комментарии без текста пропущены: схема BCF 2.1 требует непустой текст.");
+                    // In 2.1 the comment text is mandatory; in 3.0 it is not.
+                    // An empty comment would make the archive invalid.
+                    Report.Warn("Comments without text were skipped: the BCF 2.1 schema demands non-empty text.");
                     continue;
                 }
 
@@ -197,8 +208,8 @@ namespace Bcf.Core.Serialization
         {
             foreach (BcfViewpoint viewpoint in topic.Viewpoints)
             {
-                // Элемент называется Viewpoints, но описывает одну точку зрения:
-                // так в схеме 2.1, менять нельзя
+                // The element is called Viewpoints yet describes a single
+                // viewpoint: that is how the 2.1 schema has it, and it stays
                 writer.WriteStartElement("Viewpoints");
                 writer.WriteAttributeString("Guid", FormatGuid(viewpoint.Guid));
 
@@ -236,7 +247,7 @@ namespace Bcf.Core.Serialization
 
             writer.WriteStartElement("Components");
 
-            // В 2.1 подсказки лежат на уровне Components и идут первыми
+            // In 2.1 the hints live at the Components level and come first
             if (visibility != null && visibility.Hints != null)
             {
                 Bcf30ArchiveWriter.WriteViewSetupHints(writer, visibility.Hints);
@@ -252,8 +263,8 @@ namespace Bcf.Core.Serialization
                 writer.WriteEndElement();
             }
 
-            // Visibility в 2.1 обязателен внутри Components: если его нет,
-            // подставляем видимость по умолчанию, иначе файл невалиден
+            // In 2.1 Visibility is mandatory inside Components: without one we
+            // put in the default visibility, or the file is invalid
             writer.WriteStartElement("Visibility");
             writer.WriteAttributeString("DefaultVisibility", visibility != null && visibility.DefaultVisibility ? "true" : "false");
 
@@ -292,8 +303,8 @@ namespace Bcf.Core.Serialization
                 if (clamped)
                 {
                     Report.Warn(
-                        "Угол обзора подрезан до интервала [45; 60]: схема BCF 2.1 других значений не допускает. " +
-                        "В 2.1 вид будет отличаться от исходного, в 3.0 — нет.");
+                        "The field of view was clamped to the [45; 60] interval: the BCF 2.1 schema allows nothing else. " +
+                        "In 2.1 the view will differ from the original; in 3.0 it will not.");
                 }
 
                 writer.WriteElementString("FieldOfView", BcfNumber.Format(fov));
@@ -311,7 +322,7 @@ namespace Bcf.Core.Serialization
                 writer.WriteEndElement();
             }
 
-            Report.Drop("AspectRatio", "в BCF 2.1 у камер нет такого поля");
+            Report.Drop("AspectRatio", "cameras in BCF 2.1 have no such field");
         }
     }
 }

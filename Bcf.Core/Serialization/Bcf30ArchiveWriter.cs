@@ -9,12 +9,19 @@ using Bcf.Core.Vocabulary;
 namespace Bcf.Core.Serialization
 {
     /// <summary>
+    /// The BCF 3.0 serializer — the main export format.
+    ///
+    /// The differences from 2.1 that renaming files cannot paper over:
+    /// comments and viewpoints live inside Topic, the vocabularies moved out
+    /// into extensions.xml, cameras gained a mandatory AspectRatio, and
+    /// ViewSetupHints moved inside Visibility.
+    ///
     /// Сериализатор BCF 3.0 — основной формат выгрузки.
     ///
-    /// Отличия от 2.1, которые нельзя обойти переименованием файлов:
-    /// комментарии и точки зрения лежат внутри Topic, справочники вынесены
-    /// в extensions.xml, у камер появился обязательный AspectRatio,
-    /// а ViewSetupHints переехал внутрь Visibility.
+    /// Отличия от 2.1, которые не обойти переименованием файлов: комментарии
+    /// и точки зрения лежат внутри Topic, справочники вынесены в extensions.xml,
+    /// у камер появился обязательный AspectRatio, а ViewSetupHints переехал
+    /// внутрь Visibility.
     /// </summary>
     internal sealed class Bcf30ArchiveWriter : BcfArchiveWriter
     {
@@ -100,8 +107,8 @@ namespace Bcf.Core.Serialization
             writer.WriteAttributeString("TopicType", topic.TopicType);
             writer.WriteAttributeString("TopicStatus", topic.TopicStatus);
 
-            // Порядок элементов задан xs:sequence схемы markup.xsd.
-            // Перестановка делает файл невалидным, и это не ловится глазами.
+            // The element order is fixed by the xs:sequence of markup.xsd.
+            // Reordering makes the file invalid, and the eye does not catch it.
             if (topic.ReferenceLinks.Count > 0)
             {
                 writer.WriteStartElement("ReferenceLinks");
@@ -249,7 +256,7 @@ namespace Bcf.Core.Serialization
                 writer.WriteStartElement("Visibility");
                 writer.WriteAttributeString("DefaultVisibility", visibility.DefaultVisibility ? "true" : "false");
 
-                // В 3.0 подсказки лежат внутри Visibility, в 2.1 — на уровне Components
+                // In 3.0 the hints live inside Visibility; in 2.1, at the Components level
                 if (visibility.Hints != null)
                 {
                     WriteViewSetupHints(writer, visibility.Hints);
@@ -284,10 +291,10 @@ namespace Bcf.Core.Serialization
         {
             if (viewpoint.Camera == null)
             {
-                // В схеме 3.0 камера обязательна: выбор между OrthogonalCamera
-                // и PerspectiveCamera объявлен без minOccurs="0".
+                // The 3.0 schema demands a camera: the choice between
+                // OrthogonalCamera and PerspectiveCamera carries no minOccurs="0".
                 throw new InvalidOperationException(
-                    "Точка зрения " + FormatGuid(viewpoint.Guid) + " без камеры: схема BCF 3.0 требует камеру.");
+                    "The viewpoint " + FormatGuid(viewpoint.Guid) + " has no camera, and the BCF 3.0 schema demands one.");
             }
 
             var perspective = viewpoint.Camera as BcfPerspectiveCamera;
@@ -305,7 +312,7 @@ namespace Bcf.Core.Serialization
 
                 if (clamped)
                 {
-                    Report.Warn("Угол обзора вышел за допустимый схемой 3.0 интервал (0; 180) и был подрезан.");
+                    Report.Warn("The field of view fell outside the (0; 180) interval the 3.0 schema allows and was clamped.");
                 }
 
                 writer.WriteElementString("FieldOfView", BcfNumber.Format(fov));
@@ -327,12 +334,12 @@ namespace Bcf.Core.Serialization
 
         private static string EnsureProjectId(string projectId)
         {
-            // ProjectId в схеме обязателен и непуст. Пустой идентификатор —
-            // это забытая настройка, и лучше упасть здесь, чем отдать
-            // невалидный архив.
+            // The schema demands a non-empty ProjectId. An empty identifier
+            // means a forgotten setting, and failing here beats handing out an
+            // invalid archive.
             if (string.IsNullOrWhiteSpace(projectId))
             {
-                throw new InvalidOperationException("Не задан идентификатор проекта (BcfWriteOptions.Project.ProjectId).");
+                throw new InvalidOperationException("The project identifier is not set (BcfWriteOptions.Project.ProjectId).");
             }
 
             return projectId;

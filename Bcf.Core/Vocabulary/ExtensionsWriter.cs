@@ -7,33 +7,60 @@ using System.Xml;
 namespace Bcf.Core.Vocabulary
 {
     /// <summary>
-    /// Формирует объявление справочников для архива — из констант, а не из
-    /// готового файла: единственный источник правды это bcf-extensions.json,
-    /// и любой предзаготовленный extensions.xml разошёлся бы с ним первым же
+    /// Builds the vocabulary declaration for an archive out of constants
+    /// rather than out of a ready-made file: the single source of truth is
+    /// bcf-extensions.json, and any pre-baked extensions.xml would drift away
+    /// from it on the first change to the vocabulary.
+    ///
+    /// In 3.0 this is extensions.xml at the root of the archive. In 2.1 the
+    /// mechanism differs: an extensions.xsd that redefines the simple types of
+    /// markup.xsd — which is why markup.xsd has to lie in the archive beside it,
+    /// or the schema will not resolve.
+    ///
+    /// Формирует объявление справочников для архива из констант, а не
+    /// из готового файла: единственный источник правды — bcf-extensions.json,
+    /// и любой заранее заготовленный extensions.xml разошёлся бы с ним первым же
     /// изменением справочника.
     ///
     /// В 3.0 это extensions.xml в корне архива. В 2.1 механизм другой:
-    /// extensions.xsd, переопределяющий простые типы markup.xsd через redefine —
-    /// поэтому markup.xsd обязан лежать в архиве рядом, иначе схема не разрешится.
+    /// extensions.xsd, переопределяющий простые типы markup.xsd, — поэтому
+    /// markup.xsd обязан лежать в архиве рядом, иначе схема не разрешится.
     /// </summary>
     public static class ExtensionsWriter
     {
-        /// <summary>Имя файла справочников в архиве BCF 3.0.</summary>
+        /// <summary>
+        /// The name of the vocabulary file in a BCF 3.0 archive.
+        /// Имя файла справочников в архиве BCF 3.0.
+        /// </summary>
         public const string Bcf30FileName = "extensions.xml";
 
         /// <summary>
+        /// The name of the vocabulary file in a BCF 2.1 archive. Exactly
+        /// extensions.xsd, in the plural — that is what the buildingSMART test
+        /// cases call it and what receiving tools look for.
+        ///
         /// Имя файла справочников в архиве BCF 2.1. Именно extensions.xsd,
-        /// во множественном числе — так он называется в тест-кейсах buildingSMART
-        /// и так его ищут сторонние приёмники.
+        /// во множественном числе — так он называется в тест-кейсах
+        /// buildingSMART и так его ищут сторонние приёмники.
         /// </summary>
         public const string Bcf21FileName = "extensions.xsd";
 
-        /// <summary>Схема, которую переопределяет extensions.xsd в 2.1.</summary>
+        /// <summary>
+        /// The schema that extensions.xsd redefines in 2.1.
+        /// Схема, которую переопределяет extensions.xsd в 2.1.
+        /// </summary>
         public const string Bcf21RedefinedSchema = "markup.xsd";
 
         private const string XmlSchemaNamespace = "http://www.w3.org/2001/XMLSchema";
 
         /// <summary>
+        /// The prefix of the XSD namespace. A prefix and not a default
+        /// namespace on purpose: the values of the base and type attributes are
+        /// QNames, and under xmlns="...XMLSchema" the unqualified name TopicType
+        /// would land in the namespace of the schema itself. The redefine then
+        /// stops pointing at the type it redefines and the validator says
+        /// "the base type has to be self-referenced".
+        ///
         /// Префикс пространства имён XSD. Именно префикс, а не пространство
         /// по умолчанию: значения атрибутов base и type — это QName, и при
         /// xmlns="...XMLSchema" неквалифицированное имя TopicType уехало бы
@@ -50,8 +77,8 @@ namespace Bcf.Core.Vocabulary
         /// Пишет extensions.xml (BCF 3.0) в поток. UTF-8 без BOM: чужие парсеры
         /// на BOM спотыкаются чаще, чем .NET.
         /// </summary>
-        /// <param name="stream">Поток архива.</param>
-        /// <param name="users">Автор выгрузки и встреченные исполнители, уже пропущенные через <see cref="BcfUsers"/>.</param>
+        /// <param name="stream">The archive entry stream.</param>
+        /// <param name="users">Export author and the assignees encountered, already filtered through <see cref="BcfUsers"/>.</param>
         public static void Write30(Stream stream, IEnumerable<string> users)
         {
             Write30(stream, users, null);
@@ -82,11 +109,11 @@ namespace Bcf.Core.Vocabulary
                 writer.WriteStartDocument();
                 writer.WriteStartElement("Extensions");
 
-                // Порядок элементов задан схемой extensions.xsd (xs:sequence):
-                // TopicTypes, TopicStatuses, Priorities, TopicLabels, Users,
-                // SnippetTypes, Stages. Перестановка делает файл невалидным —
-                // в эталоне bcf-vocabularies/extensions.xml Stages стоит выше Users,
-                // и по схеме такой файл не проходит.
+                // The element order is fixed by the extensions.xsd schema
+                // (xs:sequence): TopicTypes, TopicStatuses, Priorities,
+                // TopicLabels, Users, SnippetTypes, Stages. Reordering makes the
+                // file invalid — in the reference bcf-vocabularies/extensions.xml
+                // Stages sits above Users, and such a file fails the schema.
                 WriteValues(writer, "TopicTypes", "TopicType", BcfExtraVocabulary.Combine(BcfVocabulary.TopicTypes.All, extra.TopicTypes));
                 WriteValues(writer, "TopicStatuses", "TopicStatus", BcfExtraVocabulary.Combine(BcfVocabulary.TopicStatuses.All, extra.TopicStatuses));
                 WriteValues(writer, "Priorities", "Priority", BcfExtraVocabulary.Combine(BcfVocabulary.Priorities.All, extra.Priorities));
@@ -133,9 +160,9 @@ namespace Bcf.Core.Vocabulary
                 writer.WriteStartElement(XmlSchemaPrefix, "redefine", XmlSchemaNamespace);
                 writer.WriteAttributeString("schemaLocation", Bcf21RedefinedSchema);
 
-                // Переопределяются только простые типы, объявленные в markup.xsd 2.1.
-                // SnippetType туда не входит — там это обычный строковый атрибут,
-                // и redefine на него схему сломает.
+                // Only the simple types declared in markup.xsd 2.1 are
+                // redefined. SnippetType is not among them — there it is an
+                // ordinary string attribute, and a redefine breaks the schema.
                 WriteEnumeration(writer, "TopicType", BcfExtraVocabulary.Combine(BcfVocabulary.TopicTypes.All, extra.TopicTypes));
                 WriteEnumeration(writer, "TopicStatus", BcfExtraVocabulary.Combine(BcfVocabulary.TopicStatuses.All, extra.TopicStatuses));
                 WriteEnumeration(writer, "TopicLabel", BcfExtraVocabulary.Combine(BcfVocabulary.TopicLabels.All, extra.TopicLabels));
@@ -149,13 +176,21 @@ namespace Bcf.Core.Vocabulary
             }
         }
 
-        /// <summary>extensions.xml (BCF 3.0) как текст — для тестов и диагностики.</summary>
+        /// <summary>
+        /// extensions.xml (BCF 3.0) as text — for tests and diagnostics.
+        /// extensions.xml (BCF 3.0) как текст — для тестов и диагностики.
+        /// </summary>
+        /// <param name="users">Export author and the assignees encountered.</param>
         public static string ToXml30(IEnumerable<string> users)
         {
             return ToText(s => Write30(s, users));
         }
 
-        /// <summary>extensions.xsd (BCF 2.1) как текст — для тестов и диагностики.</summary>
+        /// <summary>
+        /// extensions.xsd (BCF 2.1) as text — for tests and diagnostics.
+        /// extensions.xsd (BCF 2.1) как текст — для тестов и диагностики.
+        /// </summary>
+        /// <param name="users">Export author and the assignees encountered.</param>
         public static string ToXsd21(IEnumerable<string> users)
         {
             return ToText(s => Write21(s, users));
@@ -167,8 +202,9 @@ namespace Bcf.Core.Vocabulary
             {
                 Indent = true,
                 IndentChars = "  ",
-                // Кодировка задаётся здесь, а не при декодировании: XmlWriter
-                // пишет её же в объявление документа. UTF8Encoding(false) — без BOM.
+                // The encoding is set here rather than at decoding time:
+                // XmlWriter puts this very value into the document declaration.
+                // UTF8Encoding(false) means no BOM.
                 Encoding = new UTF8Encoding(false),
                 CloseOutput = false
             };
