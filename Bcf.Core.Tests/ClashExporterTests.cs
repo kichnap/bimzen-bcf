@@ -244,7 +244,7 @@ namespace Bcf.Core.Tests
 
             // Топик всё равно создаётся — без точки зрения, но с данными
             Assert.Equal(2, result.TopicsCreated);
-            Assert.Contains(result.Warnings, w => w.Contains("не получена"));
+            Assert.Contains(result.Warnings, w => w.Contains("was not obtained"));
         }
 
         [Fact]

@@ -197,7 +197,7 @@ namespace Bcf.Core.Tests
 
             Assert.True(result.Succeeded);
             Assert.Equal(0, result.TopicsCreated);
-            Assert.Contains(result.Warnings, w => w.Contains("Сохранённые виды не прочитаны"));
+            Assert.Contains(result.Warnings, w => w.Contains("The saved views were not read"));
         }
 
         [Fact]

@@ -11,12 +11,19 @@ using Bcf.Core.Serialization;
 namespace Bcf.Core.Clash
 {
     /// <summary>
-    /// Экспорт коллизий в архив BCF.
+    /// Exporting clashes into a BCF archive.
+    ///
+    /// Not one window and not one question to the user: progress goes through
+    /// <see cref="IProgress{T}"/>, cancellation through a token, and an error
+    /// comes back as part of the result. Otherwise the export could not be
+    /// reused inside an agent that runs on a schedule with nobody watching.
+    ///
+    /// Выгрузка коллизий в архив BCF.
     ///
     /// Ни одного окна и ни одного вопроса пользователю: прогресс идёт через
     /// <see cref="IProgress{T}"/>, отмена — через токен, ошибка возвращается
-    /// результатом. Иначе экспорт нельзя переиспользовать в агенте, который
-    /// работает по расписанию и без человека.
+    /// результатом. Иначе выгрузку нельзя было бы переиспользовать в агенте,
+    /// который работает по расписанию и без человека.
     /// </summary>
     public class BcfClashExporter
     {
@@ -24,13 +31,26 @@ namespace Bcf.Core.Clash
         private readonly ITopicGuidStore _topicGuids;
         private readonly ISavedViewpointSource _viewpoints;
 
-        /// <summary>Остаток лимита снимков: -1 — без ограничения, 0 — исчерпан.</summary>
+        /// <summary>
+        /// What is left of the snapshot budget: -1 means no limit, 0 means spent.
+        /// Остаток лимита снимков: -1 — без ограничения, 0 — исчерпан.
+        /// </summary>
         private int _snapshotBudget = -1;
 
-        /// <summary>Обновляемый архив; null — выгрузка пишет файл с нуля.</summary>
+        /// <summary>
+        /// The archive being updated; null means the export writes a file from
+        /// scratch.
+        ///
+        /// Обновляемый архив; null — выгрузка пишет файл с нуля.
+        /// </summary>
         private ExistingBcfArchive _existing;
 
         /// <summary>
+        /// The keys already issued during this export. The same pair of
+        /// elements collides twice more often than one would think: in a live
+        /// test of 1391 topics, 26 were such. Without counting the repeats both
+        /// topics would get one identifier and one folder in the archive.
+        ///
         /// Ключи, уже выданные в этой выгрузке. Одна и та же пара элементов
         /// сталкивается дважды чаще, чем кажется: на живой проверке из 1391
         /// замечания таких оказалось 26. Без учёта повторов оба замечания
@@ -38,13 +58,22 @@ namespace Bcf.Core.Clash
         /// </summary>
         private readonly HashSet<string> _usedKeys = new HashSet<string>(StringComparer.Ordinal);
 
-        /// <param name="source">Источник коллизий.</param>
+        /// <summary>
+        /// Creates an exporter over the sources given.
+        /// Создаёт выгрузку поверх заданных источников.
+        /// </summary>
+        /// <param name="source">The source of clashes.</param>
         /// <param name="topicGuids">
+        /// The map of identifiers issued earlier. Without it every export leans
+        /// on the deterministic key alone — enough until a server starts issuing
+        /// identifiers of its own.
+        ///
         /// Карта ранее выданных идентификаторов. Без неё каждая выгрузка
-        /// опирается только на детерминированный ключ — этого достаточно,
-        /// пока идентификаторы не начал выдавать сервер.
+        /// опирается только на детерминированный ключ — этого достаточно, пока
+        /// идентификаторы не начал выдавать сервер.
         /// </param>
         /// <param name="viewpoints">
+        /// The source of saved views. Unset means only clashes are exported.
         /// Источник сохранённых видов. Не задан — выгружаются только коллизии.
         /// </param>
         public BcfClashExporter(
@@ -58,12 +87,18 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// Writes the archive into a stream.
         /// Пишет архив в поток.
         /// </summary>
-        /// <param name="destination">Поток архива. Частичный результат при отмене удаляет вызывающий.</param>
-        /// <param name="settings">Настройки экспорта.</param>
-        /// <param name="progress">Приёмник прогресса; может быть null.</param>
-        /// <param name="cancellationToken">Токен отмены.</param>
+        /// <param name="destination">
+        /// The archive stream. On cancellation the caller deletes the partial
+        /// result.
+        ///
+        /// Поток архива. Частичный результат при отмене удаляет вызывающий.
+        /// </param>
+        /// <param name="settings">The export settings.</param>
+        /// <param name="progress">Where progress is reported; may be null.</param>
+        /// <param name="cancellationToken">Cancels the export.</param>
         public BcfExportResult Export(
             Stream destination,
             BcfExportSettings settings,
@@ -74,17 +109,22 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// Writes the archive, updating an existing one.
         /// Пишет архив, обновляя существующий.
         /// </summary>
-        /// <param name="destination">Поток нового архива.</param>
+        /// <param name="destination">The stream of the new archive.</param>
         /// <param name="existingArchive">
+        /// The file being updated, opened for reading. Writing always goes into
+        /// a new stream rather than over the original: an interrupted write over
+        /// it would leave the user without either version of the file.
+        ///
         /// Обновляемый файл, открытый на чтение. Пишем всегда в новый поток,
         /// а не поверх исходного: прерванная запись поверх оставила бы
         /// пользователя без обеих версий файла.
         /// </param>
-        /// <param name="settings">Настройки экспорта.</param>
-        /// <param name="progress">Приёмник прогресса; может быть null.</param>
-        /// <param name="cancellationToken">Токен отмены.</param>
+        /// <param name="settings">The export settings.</param>
+        /// <param name="progress">Where progress is reported; may be null.</param>
+        /// <param name="cancellationToken">Cancels the export.</param>
         public BcfExportResult Export(
             Stream destination,
             Stream existingArchive,
@@ -108,8 +148,8 @@ namespace Bcf.Core.Clash
             }
             catch (Exception ex)
             {
-                // Наружу исключение не выпускаем: в Navisworks необработанная
-                // ошибка в обработчике команды роняет всё приложение
+                // No exception is let out: in Navisworks an unhandled error
+                // inside a command handler brings the whole application down
                 result.Error = ex;
                 result.Succeeded = false;
             }
@@ -136,8 +176,9 @@ namespace Bcf.Core.Clash
 
             var state = new BcfExportProgress
             {
-                // Виды входят в общий счёт: иначе индикатор упирается в 100 %
-                // и стоит там, пока снимаются виды — а это самая долгая часть
+                // The views count towards the total: otherwise the bar hits
+                // 100 % and stands there while the views are captured — and that
+                // is the longest part
                 TotalClashes = tests.Sum(t => t.ClashCount) + viewpoints.Count
             };
 
@@ -172,9 +213,9 @@ namespace Bcf.Core.Clash
 
                 if (_existing != null)
                 {
-                    // Замечания, которых выгрузка не касалась: коллизия разобрана
-                    // и в проверку больше не попадает — из файла она пропасть
-                    // не должна
+                    // The topics the export did not touch: a clash has been
+                    // resolved and no longer appears in the test — it must not
+                    // disappear from the file
                     result.TopicsKept += _existing.CopyRemainingTopics(writer);
                     _existing.CopyExtraEntries(writer);
                 }
@@ -192,6 +233,9 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// Opens the archive being updated. Null when there is nothing to
+        /// update or nobody asked for it.
+        ///
         /// Открывает обновляемый архив. Null — когда обновлять нечего или
         /// не просили.
         /// </summary>
@@ -206,24 +250,27 @@ namespace Bcf.Core.Clash
             {
                 existing.Dispose();
 
-                // Смешивать версии в одном архиве нельзя, а молча переключить
-                // выбранную пользователем версию значит соврать о том,
-                // что мы записали
+                // Versions cannot be mixed inside one archive, and quietly
+                // switching the version the user picked would be a lie about
+                // what was written
                 throw new InvalidOperationException(
-                    "Файл выгрузки записан в формате BCF " + existing.Version.ToVersionId() +
-                    ", а выбрана версия " + settings.Version.ToVersionId() +
-                    ". Выберите ту же версию или сохраните выгрузку в новый файл.");
+                    "The export file is written in BCF " + existing.Version.ToVersionId() +
+                    " while version " + settings.Version.ToVersionId() + " is selected" +
+                    ". Pick the same version or save the export into a new file.");
             }
 
             foreach (string warning in existing.Warnings)
             {
-                result.Warn("Обновляемый файл: " + warning);
+                result.Warn("The file being updated: " + warning);
             }
 
             return existing;
         }
 
         /// <summary>
+        /// Writes a topic — our own, or, when the file being updated already
+        /// holds it, merged with what lies there.
+        ///
         /// Записывает замечание — своё или, если оно уже есть в обновляемом
         /// файле, слитое с тем, что там лежит.
         /// </summary>
@@ -238,13 +285,13 @@ namespace Bcf.Core.Clash
 
             if (existing != null && HasForeignViewpoints(existing, topic))
             {
-                // Точку зрения, добавленную в приёмнике, перезапись потеряла бы
+                // A viewpoint added in the receiving tool would be lost by a rewrite
                 if (_existing.CopyTopic(topic.Guid, writer))
                 {
                     result.TopicsKept++;
                     result.Warn(
-                        "Замечание «" + existing.Title + "» перенесено без изменений: " +
-                        "в нём есть точки зрения из приёмника, которых выгрузка не хранит.");
+                        "The topic '" + existing.Title + "' was carried over unchanged: " +
+                        "it holds viewpoints from a receiving tool that the export does not keep.");
 
                     return;
                 }
@@ -265,14 +312,21 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// Decides the fate of a topic the file being updated already holds:
+        /// carry it over as it is, or rewrite it with our data.
+        ///
+        /// It is called before the topic is assembled and before a frame is
+        /// captured: in the append-only mode a repeat export must not redraw
+        /// five thousand snapshots only to throw them away.
+        ///
         /// Решает судьбу замечания, которое уже есть в обновляемом файле:
         /// перенести как есть или переписать нашими данными.
         ///
-        /// Вызывается до сборки замечания и до снятия кадра: в режиме
-        /// «только добавить» повторная выгрузка не должна заново рисовать
-        /// пять тысяч снимков ради того, чтобы их выбросить.
+        /// Вызывается до сборки замечания и до снятия кадра: в режиме «только
+        /// добавить» повторная выгрузка не должна заново рисовать пять тысяч
+        /// снимков ради того, чтобы их выбросить.
         /// </summary>
-        /// <returns>true — замечание перенесено, своё строить не нужно.</returns>
+        /// <returns>True when the topic was carried over and ours need not be built.</returns>
         private bool KeepExisting(
             Guid topicGuid,
             BcfArchiveWriter writer,
@@ -295,8 +349,8 @@ namespace Bcf.Core.Clash
             if (foreign != null)
             {
                 result.Warn(
-                    "Замечание «" + existing.Title + "» перенесено без изменений: в нём есть " + foreign +
-                    ", чего выгрузка не хранит и при перезаписи потеряла бы.");
+                    "The topic '" + existing.Title + "' was carried over unchanged: it holds " + foreign +
+                    ", which the export does not keep and would lose in a rewrite.");
             }
 
             result.TopicsKept++;
@@ -305,8 +359,11 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
-        /// Чужие данные замечания, которых наша модель не хранит. Null —
-        /// замечание можно переписать без потерь.
+        /// The data of a topic that our model does not keep. Null means the
+        /// topic can be rewritten without losses.
+        ///
+        /// Чужие данные замечания, которых модель не хранит. Null — замечание
+        /// можно переписать без потерь.
         /// </summary>
         private static string ForeignData(BcfTopic existing)
         {
@@ -316,11 +373,17 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// Whether the existing topic holds viewpoints we do not have.
+        ///
+        /// It is checked after the topic is assembled and not before: there can
+        /// be many viewpoints of our own — one per clash of a group — and their
+        /// identifiers are known only once the group has been worked through.
+        ///
         /// Есть ли в существующем замечании точки зрения, которых нет у нас.
         ///
         /// Проверяется после сборки замечания, а не до: своих точек зрения
         /// может быть много — по одной на каждую коллизию группы, — и их
-        /// идентификаторы известны только когда группа уже разобрана.
+        /// идентификаторы известны, только когда группа уже разобрана.
         /// </summary>
         private static bool HasForeignViewpoints(BcfTopic existing, BcfTopic fresh)
         {
@@ -340,16 +403,19 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// Carries into our topic whatever may have changed at the receiving
+        /// end.
+        ///
         /// Переносит в наше замечание то, что могло измениться у приёмника.
         /// </summary>
         private static void Merge(BcfTopic fresh, BcfTopic existing, BcfExportSettings settings)
         {
-            // Замечание создано тогда, а не сейчас: дата и автор создания
-            // принадлежат первой выгрузке
+            // The topic was created then and not now: the creation date and
+            // author belong to the first export
             if (existing.CreationDate != default(DateTimeOffset)) fresh.CreationDate = existing.CreationDate;
             if (!string.IsNullOrWhiteSpace(existing.CreationAuthor)) fresh.CreationAuthor = existing.CreationAuthor;
 
-            // Номер, выданный сервером, переживает любую перезапись
+            // The number a server issued survives any rewrite
             if (!string.IsNullOrWhiteSpace(existing.ServerAssignedId)) fresh.ServerAssignedId = existing.ServerAssignedId;
 
             if (settings.KeepReceiverChanges)
@@ -376,6 +442,9 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// The comments of a receiving tool are appended to ours and ordered by
+        /// time: the conversation about a topic has to read top to bottom.
+        ///
         /// Комментарии приёмника дописываются к нашим и идут по времени:
         /// переписка по замечанию должна читаться сверху вниз.
         /// </summary>
@@ -408,8 +477,11 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
-        /// Идентификатор нашей точки зрения — он выводится из замечания
-        /// и, для точек зрения на отдельные коллизии, из ключа коллизии.
+        /// The identifier of our viewpoint — it is derived from the topic and,
+        /// for viewpoints of a single clash, from the key of that clash.
+        ///
+        /// Идентификатор нашей точки зрения — выводится из замечания и, для
+        /// точек зрения на отдельные коллизии, из ключа коллизии.
         /// </summary>
         private static Guid ViewpointGuidFor(Guid topicGuid, string discriminator = null)
         {
@@ -421,12 +493,18 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
-        /// Замечания из сохранённых видов. Идут в тот же архив, что и коллизии:
-        /// координатору нужен один файл на выгрузку, а не два.
-        /// </summary>
-        /// <summary>
+        /// The views the user selected. They are read before writing starts:
+        /// their number is what lets the progress bar know the full extent of
+        /// the work.
+        ///
+        /// Topics made from saved views go into the same archive as the clashes:
+        /// a coordinator wants one file per export, not two.
+        ///
         /// Виды, отобранные пользователем. Читаются до начала записи: их число
         /// нужно, чтобы индикатор прогресса знал полный объём работы.
+        ///
+        /// Замечания из сохранённых видов идут в тот же архив, что и коллизии:
+        /// координатору нужен один файл на выгрузку, а не два.
         /// </summary>
         private IReadOnlyList<SavedViewpointInfo> SelectViewpoints(BcfExportSettings settings, BcfExportResult result)
         {
@@ -442,7 +520,7 @@ namespace Bcf.Core.Clash
             }
             catch (Exception ex)
             {
-                result.Warn("Сохранённые виды не прочитаны: " + ex.Message);
+                result.Warn("The saved views were not read: " + ex.Message);
                 return empty;
             }
 
@@ -450,8 +528,8 @@ namespace Bcf.Core.Clash
 
             var selected = new HashSet<string>(settings.SelectedViewpointIds ?? new List<string>(), StringComparer.Ordinal);
 
-            // Пустой список выбранных означает «все»: настройки могли прийти
-            // из прошлой версии, где выбора видов ещё не было
+            // An empty selection means "all of them": the settings may have
+            // come from an earlier version that had no view picker yet
             return selected.Count == 0
                 ? all
                 : all.Where(v => selected.Contains(v.Id)).ToList();
@@ -476,8 +554,8 @@ namespace Bcf.Core.Clash
 
                 try
                 {
-                    // Ключ по идентификатору вида: переименование вида и переезд
-                    // между папками не должны создавать второе замечание
+                    // The key rests on the view identifier: renaming a view or
+                    // moving it between folders must not create a second topic
                     string key = StableTopicKey.Compute(new[] { "savedviewpoint", viewpoint.Id });
                     Guid guid = ResolveTopicGuid(key, result);
 
@@ -500,7 +578,7 @@ namespace Bcf.Core.Clash
                 catch (Exception ex)
                 {
                     result.ClashesSkippedByError++;
-                    result.Warn("Вид «" + viewpoint.FullName + "» пропущен: " + ex.Message);
+                    result.Warn("The view '" + viewpoint.FullName + "' was skipped: " + ex.Message);
                 }
 
                 state.ProcessedClashes++;
@@ -531,7 +609,7 @@ namespace Bcf.Core.Clash
             }
             catch (Exception ex)
             {
-                result.Warn("Камера вида «" + viewpoint.FullName + "» не получена: " + ex.Message);
+                result.Warn("The camera of the view '" + viewpoint.FullName + "' was not obtained: " + ex.Message);
                 return null;
             }
 
@@ -553,9 +631,10 @@ namespace Bcf.Core.Clash
                 Snapshot = data.Snapshot,
                 Index = 0,
 
-                // Сохранённый вид может прятать часть модели, но в точку зрения
-                // это не переносится: разрешение элементов в идентификаторы IFC
-                // стоило бы дороже самой выгрузки. Что видел автор, показывает снимок
+                // A saved view may hide part of the model, but that is not
+                // carried into the viewpoint: resolving the elements into IFC
+                // identifiers would cost more than the export itself. What the
+                // author saw is shown by the snapshot
                 Visibility = new BcfVisibility { DefaultVisibility = true }
             };
         }
@@ -587,13 +666,14 @@ namespace Bcf.Core.Clash
             BcfExportResult result,
             CancellationToken cancellationToken)
         {
-            // Группы накапливаются в пределах одной проверки, а не всей выгрузки:
-            // так замечания уходят в архив по мере обхода, а не в самом конце
+            // Groups accumulate within one test rather than across the whole
+            // export: this way topics reach the archive as the walk goes on and
+            // not at the very end
             var groups = new Dictionary<string, List<ClashItem>>(StringComparer.Ordinal);
             var order = new List<string>();
 
-            // Якоря групп: первое замечание группы, на которое ссылаются
-            // остальные. Живут в пределах проверки — группы тоже
+            // Group anchors: the first topic of a group, the one the rest point
+            // at. They live within a test — so do the groups
             var groupAnchors = new Dictionary<string, Guid>(StringComparer.Ordinal);
 
             foreach (ClashItem clash in _source.EnumerateClashes(test, cancellationToken))
@@ -647,11 +727,11 @@ namespace Bcf.Core.Clash
 
                 List<ClashItem> items = groups[bucket];
 
-                // Коллизия, не попавшая ни в одну группу, — сама себе группа,
-                // и «имя группы» у неё это имя коллизии вида «Столкновение123».
-                // Такие имена Navisworks раздаёт заново при пересоздании
-                // проверки, поэтому ключ для них считается по элементам:
-                // иначе замечание теряет себя ровно там, где его ищут
+                // A clash that fell into no group is a group of its own, and its
+                // "group name" is the clash name of the "Clash123" kind. Such
+                // names are handed out afresh by Navisworks when a test is
+                // rebuilt, so their key is counted over the elements instead:
+                // otherwise a topic loses itself exactly where it is looked for
                 bool grouped = !string.IsNullOrWhiteSpace(items[0].GroupName);
 
                 string key = Unique(grouped ? StableTopicKey.ForGroup(test.Name, bucket) : ClashKey(items[0]));
@@ -686,15 +766,15 @@ namespace Bcf.Core.Clash
             {
                 Guid topicGuid = ResolveTopicGuid(key, legacyKey, result);
 
-                // Решение принимается до снятия кадра: рисовать снимок,
-                // который тут же будет выброшен, — самая дорогая ошибка,
-                // какую может допустить повторная выгрузка
+                // The decision comes before the frame is captured: drawing a
+                // snapshot that is thrown away a moment later is the most
+                // expensive mistake a repeat export can make
                 if (KeepExisting(topicGuid, writer, settings, result)) return;
 
                 if (settings.GroupNameAsLabel && !string.IsNullOrWhiteSpace(clashes[0].GroupName))
                 {
-                    // Имя группы не из справочника, и файл обязан объявить его
-                    // сам — иначе строгая проверка не пропустит запись
+                    // A group name is not in the vocabulary, and the file has to
+                    // declare it itself — otherwise the strict check stops the write
                     writer.DeclareLabel(clashes[0].GroupName.Trim());
                 }
 
@@ -715,14 +795,15 @@ namespace Bcf.Core.Clash
             }
             catch (Exception ex)
             {
-                // Ошибка на одной коллизии не должна останавливать выгрузку:
-                // записываем в отчёт, пропускаем, идём дальше
+                // An error on one clash must not stop the export: it goes into
+                // the report, the clash is skipped, and the walk goes on
                 result.ClashesSkippedByError++;
-                result.Warn("Замечание '" + title + "' пропущено: " + ex.Message);
+                result.Warn("The topic '" + title + "' was skipped: " + ex.Message);
             }
         }
 
         /// <summary>
+        /// Gathers the figures on where the numeric identifiers came from.
         /// Копит статистику по тому, откуда брались числовые идентификаторы.
         /// </summary>
         private static void CountIdSources(ClashItem clash, BcfExportResult result)
@@ -730,7 +811,7 @@ namespace Bcf.Core.Clash
             foreach (ClashElementInfo element in clash.Elements)
             {
                 string source = string.IsNullOrWhiteSpace(element.ElementIdSource)
-                    ? "не найден"
+                    ? "not found"
                     : element.ElementIdSource;
 
                 int count;
@@ -745,13 +826,21 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// Pulls apart the keys that coincided within one export.
+        ///
+        /// Two clashes between the same pair of elements are an everyday thing:
+        /// a pipe crosses a wall twice. Their key is one and the same, yet the
+        /// topics have to differ, or the second wipes out the first right there
+        /// in the archive. The order Navisworks walks in is stable, so the
+        /// number of a repeat is stable from export to export as well.
+        ///
         /// Разводит ключи, совпавшие в пределах одной выгрузки.
         ///
         /// Две коллизии между одной и той же парой элементов — обычное дело:
         /// труба пересекает стену дважды. Ключ у них один, а замечания должны
-        /// быть разными, иначе второе затрёт первое прямо в архиве.
-        /// Порядок обхода Navisworks устойчив, поэтому и номер повтора
-        /// устойчив от выгрузки к выгрузке.
+        /// быть разными, иначе второе затрёт первое прямо в архиве. Порядок
+        /// обхода Navisworks устойчив, поэтому и номер повтора устойчив
+        /// от выгрузки к выгрузке.
         /// </summary>
         private string Unique(string key)
         {
@@ -766,6 +855,10 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// The key of a clash — the test name and the identifiers of its
+        /// elements. Neither the clash name nor its number: Navisworks hands
+        /// those out afresh.
+        ///
         /// Ключ коллизии — имя проверки и идентификаторы её элементов.
         /// Ни имени коллизии, ни её номера: их Navisworks раздаёт заново.
         /// </summary>
@@ -775,12 +868,21 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// Ties the per-clash topics of one group together through
+        /// RelatedTopics.
+        ///
+        /// The link runs one way, as a star onto the first topic of the group:
+        /// the archive is written as a stream, and by the time the second topic
+        /// arrives the first is already written. A back-reference would cost
+        /// holding every topic in memory until the end of the export — a price
+        /// out of all proportion to the convenience.
+        ///
         /// Связывает поштучные замечания одной группы через RelatedTopics.
         ///
         /// Связь односторонняя, звездой на первое замечание группы: архив
         /// пишется потоком, и когда приходит второе, первое уже записано.
-        /// Обратная ссылка стоила бы держать все замечания в памяти до конца
-        /// выгрузки — цена, несоразмерная удобству.
+        /// Обратная ссылка стоила бы того, чтобы держать все замечания в памяти
+        /// до конца выгрузки, — цена, несоразмерная удобству.
         /// </summary>
         private static void LinkToGroup(
             BcfTopic topic,
@@ -806,16 +908,27 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// Adds a viewpoint per clash of a group.
+        ///
+        /// This is the only way to preserve the pairs: in the flat component
+        /// list of a topic an element taking part in three clashes lies once,
+        /// and splitting that list back into pairs is impossible even in theory.
+        /// A viewpoint holds exactly the two components of one clash.
+        ///
+        /// No snapshots are captured here: a second per frame against a couple
+        /// of kilobytes of XML — the difference that would turn the export of a
+        /// group of sixty clashes into a minute of work and ten megabytes.
+        ///
         /// Добавляет точку зрения на каждую коллизию группы.
         ///
-        /// Это единственный способ сохранить пары: в плоском списке
-        /// компонентов замечания элемент, участвующий в трёх коллизиях,
-        /// лежит один раз, и разбить список обратно на пары нельзя даже
-        /// в теории. В точке зрения — ровно два компонента одной коллизии.
+        /// Это единственный способ сохранить пары: в плоском списке компонентов
+        /// замечания элемент, участвующий в трёх коллизиях, лежит один раз,
+        /// и разбить список обратно на пары нельзя даже в теории. В точке зрения
+        /// — ровно два компонента одной коллизии.
         ///
-        /// Снимки здесь не снимаются: секунда на кадр против пары килобайт
-        /// XML — разница, из-за которой выгрузка группы из шестидесяти
-        /// коллизий превратилась бы в минуту работы и десяток мегабайт.
+        /// Снимки здесь не снимаются: секунда на кадр против пары килобайт XML —
+        /// разница, из-за которой выгрузка группы из шестидесяти коллизий
+        /// превратилась бы в минуту работы и десяток мегабайт.
         /// </summary>
         private void AddClashViewpoints(
             BcfTopic topic,
@@ -851,11 +964,19 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// The topic identifier: the one issued earlier when it is known,
+        /// otherwise a deterministic one derived from the key. The first matters
+        /// more than the second — on a server a topic may have an identifier of
+        /// its own, and a repeat export has to land in that same topic rather
+        /// than create a second one beside it.
+        ///
         /// Идентификатор замечания: ранее выданный, если он известен, иначе
         /// детерминированный из ключа. Первое важнее второго — на сервере
-        /// у топика может оказаться свой Guid, и повторная выгрузка обязана
-        /// попасть в тот же топик, а не создать рядом второй.
+        /// у замечания может оказаться свой идентификатор, и повторная выгрузка
+        /// обязана попасть в то же замечание, а не создать рядом второе.
         /// </summary>
+        /// <param name="key">The stable key of this topic.</param>
+        /// <param name="result">Where a reuse is counted.</param>
         private Guid ResolveTopicGuid(string key, BcfExportResult result)
         {
             return ResolveTopicGuid(key, null, result);
@@ -916,8 +1037,9 @@ namespace Bcf.Core.Clash
         {
             ClashItem source = clashes[0];
 
-            // Снимки самая медленная часть экспорта; лимит задаётся настройками
-            // и после его исчерпания вид всё равно нужен — без картинки
+            // Snapshots are the slowest part of the export; the limit comes
+            // from the settings, and once it is spent the viewpoint is still
+            // wanted — without a picture
             SnapshotRequest request = snapshot.Enabled && _snapshotBudget == 0
                 ? WithoutSnapshot(snapshot)
                 : snapshot;
@@ -934,7 +1056,7 @@ namespace Bcf.Core.Clash
             }
             catch (Exception ex)
             {
-                result.Warn("Точка зрения для '" + source.DisplayName + "' не получена: " + ex.Message);
+                result.Warn("The viewpoint for '" + source.DisplayName + "' was not obtained: " + ex.Message);
                 return null;
             }
 
@@ -944,8 +1066,8 @@ namespace Bcf.Core.Clash
 
             var viewpoint = new BcfViewpoint
             {
-                // Идентификатор точки зрения выводится из идентификатора замечания:
-                // при повторной выгрузке он должен получиться тем же
+                // The viewpoint identifier is derived from the topic identifier:
+                // a repeat export has to arrive at the same one
                 Guid = ViewpointGuidFor(topicGuid, discriminator),
                 Camera = data.Camera,
                 Snapshot = data.Snapshot,
@@ -969,8 +1091,9 @@ namespace Bcf.Core.Clash
                 viewpoint.ClippingPlanes.Add(plane);
             }
 
-            // Видимость задаётся явными списками, а не прозрачным затемнением
-            // Navisworks: в других приложениях затемнение отображается иначе
+            // Visibility is given as explicit lists rather than as the
+            // Navisworks translucent dimming: elsewhere that dimming is shown
+            // differently
             viewpoint.Visibility = new BcfVisibility { DefaultVisibility = true };
 
             return viewpoint;
@@ -1006,6 +1129,9 @@ namespace Bcf.Core.Clash
         }
 
         /// <summary>
+        /// The project identifier out of the document path — deterministic, so
+        /// that repeat exports of one file land in one project.
+        ///
         /// Идентификатор проекта из пути документа — детерминированный, чтобы
         /// повторные выгрузки одного файла попадали в один проект.
         /// </summary>
@@ -1024,8 +1150,8 @@ namespace Bcf.Core.Clash
                 return string.IsNullOrWhiteSpace(clash.LevelName) ? "Без уровня" : clash.LevelName;
             }
 
-            // Несгруппированные коллизии не сваливаются в одну кучу: у каждой
-            // своё замечание, иначе они потеряются внутри общей группы
+            // Ungrouped clashes are not tipped into one heap: each gets a topic
+            // of its own, or they would be lost inside a common group
             if (!string.IsNullOrWhiteSpace(clash.GroupName)) return clash.GroupName;
 
             return string.IsNullOrWhiteSpace(clash.DisplayName) ? "Коллизия" : clash.DisplayName;
@@ -1045,7 +1171,8 @@ namespace Bcf.Core.Clash
 
         private static void ReportEvery(IProgress<BcfExportProgress> progress, BcfExportProgress state)
         {
-            // Прогресс на каждой коллизии — это тысячи маршалингов в UI-поток
+            // Progress on every clash means thousands of marshalling hops onto
+            // the UI thread
             if (state.ProcessedClashes % 25 == 0) Report(progress, state);
         }
     }

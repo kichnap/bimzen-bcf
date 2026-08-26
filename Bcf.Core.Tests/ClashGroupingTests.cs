@@ -196,7 +196,7 @@ namespace Bcf.Core.Tests
 
             BcfExportResult result = Export(Settings(), new FakeSource(clash));
 
-            Assert.Equal(2, result.ElementIdSources["не найден"]);
+            Assert.Equal(2, result.ElementIdSources["not found"]);
         }
 
         [Fact]
