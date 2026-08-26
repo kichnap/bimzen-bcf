@@ -79,6 +79,7 @@ schemas/3.0/         XSDs aus buildingSMART/BCF-XML, Branch release_3_0
 schemas/2.1/         XSDs aus buildingSMART/BCF-XML, Branch release_2_1
 schemas/api/         maschinenlesbare Beschreibung der Exporteinstellungen
 docs/integration.md  Vertrag für die Einbettung in ein eigenes Werkzeug
+docs/releasing.md    wie eine Version zu nuget.org gelangt und was einmalig einzurichten ist
 test-data/           Referenzarchive .bcfzip für Importtests
 ```
 

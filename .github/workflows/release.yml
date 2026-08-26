@@ -1,0 +1,72 @@
+# Publishes BimZen.Bcf.Core to nuget.org when a version tag is pushed.
+#
+# There is no API key in this repository and there is not meant to be one:
+# nuget.org issues a temporary key in exchange for a GitHub OIDC token, and
+# that key lives for an hour. The trust is registered on nuget.org against
+# this repository and this file name, so renaming the file breaks publishing
+# until the policy is updated to match.
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: windows-latest
+
+    permissions:
+      # Without this the OIDC token is never issued and the login step fails
+      # with no useful explanation.
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # A tag says what the maintainer meant to release; the csproj says what
+      # would actually be published. Disagreement between them is a mistake
+      # worth catching before the package is on nuget.org for good.
+      - name: Check the tag against the package version
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}' -replace '^v', ''
+          $xml = [xml](Get-Content Bcf.Core/Bcf.Core.csproj)
+          $version = ($xml.Project.PropertyGroup.Version | Where-Object { $_ }) -join ''
+          if ($tag -and $tag -ne $version) {
+            throw "The tag says $tag while Bcf.Core.csproj says $version."
+          }
+          Write-Host "Version $version"
+
+      - name: Test
+        run: dotnet test Bcf.Core.Tests/Bcf.Core.Tests.csproj -c Release --nologo
+
+      - name: Pack
+        run: dotnet pack Bcf.Core/Bcf.Core.csproj -c Release --nologo -o artifacts
+
+      # The temporary key is valid for an hour, so it is asked for here and
+      # not at the top of the job.
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: login
+        with:
+          # The nuget.org profile name, not an email address. Set it under
+          # Settings - Secrets and variables - Actions - Variables.
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Push
+        run: >
+          dotnet nuget push artifacts/*.nupkg
+          --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts/*

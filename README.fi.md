@@ -79,6 +79,7 @@ schemas/3.0/         XSD:t lähteestä buildingSMART/BCF-XML, haara release_3_0
 schemas/2.1/         XSD:t lähteestä buildingSMART/BCF-XML, haara release_2_1
 schemas/api/         koneluettava kuvaus vienti­asetuksista
 docs/integration.md  sopimus kirjaston upottamisesta omaan työkaluun
+docs/releasing.md    miten versio päätyy nuget.orgiin ja mitä pitää kerran asettaa
 test-data/           referenssiarkistot .bcfzip tuontitesteihin
 ```
 

@@ -78,6 +78,7 @@ schemas/3.0/         XSD из buildingSMART/BCF-XML, ветка release_3_0
 schemas/2.1/         XSD из buildingSMART/BCF-XML, ветка release_2_1
 schemas/api/         машиночитаемое описание настроек выгрузки
 docs/integration.md  договор на встраивание библиотеки в свой инструмент
+docs/releasing.ru.md как версия попадает на nuget.org и что настроить один раз
 test-data/           эталонные архивы .bcfzip для тестов импорта
 ```
 
