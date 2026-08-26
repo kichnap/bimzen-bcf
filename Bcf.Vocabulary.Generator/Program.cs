@@ -5,12 +5,21 @@ using System.Text;
 namespace Bcf.Vocabulary.Generator
 {
     /// <summary>
+    /// The generator of the vocabulary constants.
+    ///
+    ///   dotnet run --project Bcf.Vocabulary.Generator            rewrite BcfVocabulary.g.cs
+    ///   dotnet run --project Bcf.Vocabulary.Generator -- --check check that the file is current
+    ///
+    /// The --check mode is doubled by the VocabularyDriftTests test: the
+    /// generator is convenient for a person, the test makes sure nobody forgets
+    /// to run it.
+    ///
     /// Генератор констант справочника.
     ///
     ///   dotnet run --project Bcf.Vocabulary.Generator            перезаписать BcfVocabulary.g.cs
     ///   dotnet run --project Bcf.Vocabulary.Generator -- --check проверить, что файл актуален
     ///
-    /// Режим --check дублируется тестом VocabularyDriftTests: генератор удобен
+    /// Режим --check продублирован тестом VocabularyDriftTests: генератор удобен
     /// человеку, тест не даёт забыть его запустить.
     /// </summary>
     public static class Program
@@ -32,8 +41,8 @@ namespace Bcf.Vocabulary.Generator
                 {
                     if (!File.Exists(generatedFile))
                     {
-                        Console.Error.WriteLine("Нет файла " + RepositoryPaths.OutputRelativePath +
-                                                ". Запустите генератор без --check.");
+                        Console.Error.WriteLine("There is no " + RepositoryPaths.OutputRelativePath +
+                                                " file. Run the generator without --check.");
                         return 1;
                     }
 
@@ -41,18 +50,19 @@ namespace Bcf.Vocabulary.Generator
                     if (RepositoryPaths.NormalizeNewLines(existing) != RepositoryPaths.NormalizeNewLines(generated))
                     {
                         Console.Error.WriteLine(RepositoryPaths.OutputRelativePath +
-                                                " разошёлся со справочником. Запустите генератор без --check и закоммитьте результат.");
+                                                " has drifted from the vocabulary. Run the generator without --check and commit the result.");
                         return 1;
                     }
 
-                    Console.WriteLine("Справочник и константы совпадают.");
+                    Console.WriteLine("The vocabulary and the constants agree.");
                     return 0;
                 }
 
                 Directory.CreateDirectory(Path.GetDirectoryName(generatedFile));
-                // UTF-8 без BOM: файл читают и .NET, и утилиты сравнения в CI
+                // UTF-8 without a BOM: the file is read by .NET and by the diff
+                // tools in CI alike
                 File.WriteAllText(generatedFile, generated, new UTF8Encoding(false));
-                Console.WriteLine("Записано: " + generatedFile);
+                Console.WriteLine("Written: " + generatedFile);
                 return 0;
             }
             catch (Exception ex)
