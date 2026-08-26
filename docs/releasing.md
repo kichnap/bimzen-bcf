@@ -25,10 +25,17 @@ Done once by the account that owns the package.
    | Repository | `bimzen-bcf` |
    | Workflow File | `release.yml` |
    | Environment | leave empty |
+   | Glob Patterns and Packages | `BimZen.Bcf.*` |
 
    The workflow file is the **name only**, without `.github/workflows/`.
    Renaming the workflow breaks publishing until the policy is updated to
    match — which is the point of it.
+
+   The last field limits which package IDs this policy may publish under; it
+   cannot be left empty, and a bare `*` defeats the purpose. A pattern rather
+   than the exact ID because a pattern is the ordinary way to allow a name
+   that does not exist on nuget.org yet, and because a second package split
+   out of this library would not need the policy reopened. One entry per line.
 
    A policy for a public repository is active straight away. For a private
    one it starts out temporarily active for seven days: nuget.org needs the
@@ -55,6 +62,12 @@ Done once by the account that owns the package.
    ```bash
    git tag v1.1.0 && git push origin main --tags
    ```
+
+Before the first release, rehearse: Actions → Release → **Run workflow**,
+leaving the *Push to nuget.org* box unticked. Everything runs except the
+push, so the token exchange is proved against the real policy while the only
+irreversible step is held back. A version on nuget.org can be unlisted but
+never replaced, which is what makes a rehearsal worth the minute.
 
 The workflow refuses to publish when the tag and `<Version>` disagree, runs
 the tests, packs, asks nuget.org for a temporary key and pushes. The symbol

@@ -5,12 +5,22 @@
 # that key lives for an hour. The trust is registered on nuget.org against
 # this repository and this file name, so renaming the file breaks publishing
 # until the policy is updated to match.
+#
+# Run by hand to rehearse: everything happens except the push, which is the
+# only irreversible step — a version on nuget.org can be unlisted but never
+# replaced. The rehearsal proves the token exchange works before a tag makes
+# it matter.
 name: Release
 
 on:
   push:
     tags: ['v*.*.*']
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Push to nuget.org (otherwise it is a rehearsal)'
+        type: boolean
+        default: false
 
 jobs:
   publish:
@@ -22,6 +32,9 @@ jobs:
       id-token: write
       contents: read
 
+    env:
+      PUBLISHING: ${{ github.event_name == 'push' || inputs.publish }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -31,16 +44,21 @@ jobs:
 
       # A tag says what the maintainer meant to release; the csproj says what
       # would actually be published. Disagreement between them is a mistake
-      # worth catching before the package is on nuget.org for good.
+      # worth catching before the package is on nuget.org for good. A manual
+      # run has no tag to compare against, so it only reports the version.
       - name: Check the tag against the package version
         shell: pwsh
         run: |
-          $tag = '${{ github.ref_name }}' -replace '^v', ''
           $xml = [xml](Get-Content Bcf.Core/Bcf.Core.csproj)
           $version = ($xml.Project.PropertyGroup.Version | Where-Object { $_ }) -join ''
-          if ($tag -and $tag -ne $version) {
-            throw "The tag says $tag while Bcf.Core.csproj says $version."
+
+          if ('${{ github.ref_type }}' -eq 'tag') {
+            $tag = '${{ github.ref_name }}' -replace '^v', ''
+            if ($tag -ne $version) {
+              throw "The tag says $tag while Bcf.Core.csproj says $version."
+            }
           }
+
           Write-Host "Version $version"
 
       - name: Test
@@ -50,7 +68,8 @@ jobs:
         run: dotnet pack Bcf.Core/Bcf.Core.csproj -c Release --nologo -o artifacts
 
       # The temporary key is valid for an hour, so it is asked for here and
-      # not at the top of the job.
+      # not at the top of the job. A rehearsal asks for one too: the token
+      # exchange is the part worth testing, and an unused key simply expires.
       - name: NuGet login
         uses: NuGet/login@v1
         id: login
@@ -60,11 +79,16 @@ jobs:
           user: ${{ vars.NUGET_USER }}
 
       - name: Push
+        if: env.PUBLISHING == 'true'
         run: >
           dotnet nuget push artifacts/*.nupkg
           --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
           --source https://api.nuget.org/v3/index.json
           --skip-duplicate
+
+      - name: Rehearsal, nothing was pushed
+        if: env.PUBLISHING != 'true'
+        run: echo "The package was built and nuget.org issued a key. Nothing was published."
 
       - uses: actions/upload-artifact@v4
         with:
