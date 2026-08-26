@@ -309,11 +309,11 @@ namespace Bcf.Core.Tests
             string markup = TestData.EntryText(archive, BcfEntryNames.MarkupEntry(topic.Guid));
             string extensions = TestData.EntryText(archive, ExtensionsWriter.Bcf30FileName);
 
-            // Значение не теряется — оно остаётся в самом замечании
+            // The value is not lost — it stays in the topic itself
             Assert.Contains("<AssignedTo>Иванов (ОВ)</AssignedTo>", markup, StringComparison.Ordinal);
-            // но в объявленный список идентификаторов не попадает
+            // but it does not reach the declared list of identifiers
             Assert.DoesNotContain("Иванов", extensions, StringComparison.Ordinal);
-            Assert.Contains(report.Warnings, w => w.Contains("не похожие на email"));
+            Assert.Contains(report.Warnings, w => w.Contains("do not look like an email address"));
         }
 
         [Fact]

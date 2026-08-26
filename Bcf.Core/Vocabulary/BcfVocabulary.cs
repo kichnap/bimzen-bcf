@@ -185,8 +185,8 @@ namespace Bcf.Core.Vocabulary
         /// Whether the lifecycle model allows this transition between statuses.
         /// Разрешает ли модель жизненного цикла такой переход между статусами.
         /// </summary>
-        /// <param name="from">The status to move from.</param>
-        /// <param name="to">The status to move to.</param>
+        /// <param name="fromStatus">The status to move from.</param>
+        /// <param name="toStatus">The status to move to.</param>
         public static bool IsTransitionAllowed(string fromStatus, string toStatus)
         {
             IReadOnlyList<string> allowed;
