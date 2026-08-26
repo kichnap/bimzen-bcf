@@ -78,17 +78,33 @@ jobs:
           # Settings - Secrets and variables - Actions - Variables.
           user: ${{ vars.NUGET_USER }}
 
+      # The file is resolved here instead of being handed to dotnet as a
+      # wildcard: pwsh leaves the pattern alone and dotnet then looks for a
+      # file literally named "*.nupkg". The symbol package travels with the
+      # .nupkg on its own and is not pushed separately.
       - name: Push
         if: env.PUBLISHING == 'true'
-        run: >
-          dotnet nuget push artifacts/*.nupkg
-          --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
-          --source https://api.nuget.org/v3/index.json
-          --skip-duplicate
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem artifacts -Filter *.nupkg)
+          if ($packages.Count -ne 1) {
+            throw "Expected one .nupkg in artifacts, found $($packages.Count): $($packages.Name -join ', ')"
+          }
 
+          Write-Host "Pushing $($packages[0].Name)"
+          dotnet nuget push $packages[0].FullName `
+            --api-key ${{ steps.login.outputs.NUGET_API_KEY }} `
+            --source https://api.nuget.org/v3/index.json `
+            --skip-duplicate
+
+      # A rehearsal skips the push, so the push is the one step a rehearsal
+      # cannot vouch for. It is kept as simple as it can be for that reason.
       - name: Rehearsal, nothing was pushed
         if: env.PUBLISHING != 'true'
-        run: echo "The package was built and nuget.org issued a key. Nothing was published."
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem artifacts -Filter *.nupkg)
+          Write-Host "nuget.org issued a key and $($packages.Name -join ', ') is built. Nothing was published."
 
       - uses: actions/upload-artifact@v7
         with:
