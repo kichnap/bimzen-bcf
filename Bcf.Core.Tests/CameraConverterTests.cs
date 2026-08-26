@@ -14,7 +14,7 @@ namespace Bcf.Core.Tests
         [Fact]
         public void NoRotation_LooksAlongMinusZ()
         {
-            // Базовая ориентация камеры Navisworks: взгляд вдоль −Z, вверх +Y
+            // The base orientation of a Navisworks camera: looking along -Z, up along +Y
             AssertVector(new Vector3(0, 0, -1), CameraConverter.GetDirection(Rotation.Identity));
             AssertVector(new Vector3(0, 1, 0), CameraConverter.GetUpVector(Rotation.Identity));
         }
@@ -22,9 +22,9 @@ namespace Bcf.Core.Tests
         [Fact]
         public void QuarterTurnAroundX_GivesHorizontalViewInZUpWorld()
         {
-            // Поворот на 90° вокруг X превращает взгляд вдоль −Z во взгляд вдоль +Y,
-            // а «вверх» — в +Z. Это обычный фасадный вид в мире с Z вверх:
-            // если бы оси были перепутаны, камера смотрела бы в землю.
+            // A 90 degree turn about X makes the look along -Z into a look along +Y and
+            // "up" into +Z. That is an ordinary elevation view in a Z-up world: had the
+            // axes been mixed up, the camera would be looking at the ground.
             Rotation rotation = Rotation.FromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2);
 
             AssertVector(new Vector3(0, 1, 0), CameraConverter.GetDirection(rotation));
@@ -34,7 +34,7 @@ namespace Bcf.Core.Tests
         [Fact]
         public void QuarterTurnAroundZ_TurnsUpVectorOnly()
         {
-            // Вращение вокруг оси взгляда не меняет направление, только «вверх»
+            // A spin about the viewing axis changes no direction, only "up"
             Rotation rotation = Rotation.FromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2);
 
             AssertVector(new Vector3(0, 0, -1), CameraConverter.GetDirection(rotation));
@@ -53,8 +53,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void NonUnitQuaternion_StillGivesUnitVectors()
         {
-            // Кватернион из API может прийти чуть денормализованным после
-            // накопления поворотов; векторы в файле обязаны остаться единичными
+            // A quaternion from an API may arrive slightly denormalised after turns have
+            // accumulated; the vectors in the file have to stay unit length
             var rotation = new Rotation(0.6, 0.0, 0.0, 0.6);
 
             Assert.Equal(1.0, CameraConverter.GetDirection(rotation).Length, 9);
@@ -81,7 +81,7 @@ namespace Bcf.Core.Tests
                 16.0 / 9.0,
                 LengthUnit.Feet);
 
-            // 10 футов = 3.048 м — ни одной сырой координаты в файле быть не должно
+            // 10 feet = 3.048 m — not one raw coordinate may reach the file
             AssertVector(new Vector3(3.048, 6.096, 9.144), camera.ViewPoint, 1e-9);
             Assert.Equal(60.0, camera.FieldOfViewDegrees, 9);
             Assert.Equal(16.0 / 9.0, camera.AspectRatio, 9);
@@ -106,7 +106,7 @@ namespace Bcf.Core.Tests
         {
             bool clamped;
 
-            // Схема 2.1 разрешает только [45; 60] — иначе файл не проходит валидацию
+            // The 2.1 schema allows only [45; 60] — otherwise the file fails validation
             Assert.Equal(45.0, CameraConverter.ClampFieldOfView(30.0, BcfVersion.Bcf21, out clamped));
             Assert.True(clamped);
 
@@ -125,7 +125,7 @@ namespace Bcf.Core.Tests
             Assert.Equal(90.0, CameraConverter.ClampFieldOfView(90.0, BcfVersion.Bcf30, out clamped));
             Assert.False(clamped);
 
-            // В 3.0 границы (0; 180) открытые: ровно 180 записать нельзя
+            // In 3.0 the (0; 180) bounds are open: exactly 180 cannot be written
             Assert.True(CameraConverter.ClampFieldOfView(180.0, BcfVersion.Bcf30, out clamped) < 180.0);
             Assert.True(clamped);
         }

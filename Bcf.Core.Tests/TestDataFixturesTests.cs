@@ -11,11 +11,11 @@ using Xunit;
 namespace Bcf.Core.Tests
 {
     /// <summary>
-    /// Эталонные архивы из test-data уходят команде онлайн-сервиса как фикстуры
-    /// для тестов импорта. Здесь они проверяются как чужие файлы: читаются
-    /// заново и валидируются по официальным схемам buildingSMART.
+    /// The reference archives in test-data travel to other teams as fixtures for
+    /// import tests. Here they are checked as foreign files: read afresh and
+    /// validated against the official buildingSMART schemas.
     ///
-    /// Если эти тесты упали, значит серверная команда получила бы битые данные.
+    /// If these tests fail, the receiving team would have got broken data.
     /// </summary>
     public class TestDataFixturesTests
     {
@@ -43,7 +43,7 @@ namespace Bcf.Core.Tests
 
             BcfReadResult read = Read(fileName);
 
-            // Проверяем разметку каждого топика: именно её разбирает импортёр
+            // The markup of every topic is validated: that is what an importer parses
             foreach (BcfTopic topic in read.Topics.Take(25))
             {
                 string markup = TestData.EntryText(archive, BcfEntryNames.MarkupEntry(topic.Guid));
@@ -65,8 +65,8 @@ namespace Bcf.Core.Tests
             byte[] snapshot = TestData.EntryBytes(archive, BcfEntryNames.SnapshotEntry(
                 topic.Guid, viewpoint.SnapshotFileName));
 
-            // Сигнатура PNG плюс завершающий блок IEND: заглушка из одной
-            // подписи не открылась бы ни в одном просмотрщике
+            // The PNG signature plus the closing IEND block: a stub of one signature
+            // would not open in any viewer
             Assert.True(snapshot.Length > 100);
             Assert.Equal(new byte[] { 0x89, 0x50, 0x4E, 0x47 }, snapshot.Take(4).ToArray());
             Assert.Contains("IEND", System.Text.Encoding.ASCII.GetString(snapshot.Skip(snapshot.Length - 12).ToArray()), StringComparison.Ordinal);
@@ -75,8 +75,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void ForeignValues_AreReadWithoutError_AndReported()
         {
-            // Критерий приёмки: файл со значениями чужого словаря читается,
-            // значения сохраняются как есть, а в отчёте появляется предупреждение
+            // The acceptance criterion: a file with values of a foreign vocabulary is
+            // read, the values are kept as they are, and a warning appears in the report
             BcfReadResult read = Read("foreign-values-bcf30.bcfzip");
 
             Assert.Equal(3, read.Topics.Count);
@@ -86,7 +86,7 @@ namespace Bcf.Core.Tests
             Assert.Contains(read.ExternalValues, v => v.Value == "Открыто" && v.Field == "TopicStatus");
             Assert.Contains(read.ExternalValues, v => v.Value == "Пересечение" && v.Field == "TopicType");
 
-            // И при этом ни одно значение не подменено на «правильное»
+            // And not one value was swapped for a "correct" one along the way
             Assert.DoesNotContain(read.Topics, t => t.TopicStatus == BcfVocabulary.TopicStatuses.New);
         }
 
@@ -95,8 +95,8 @@ namespace Bcf.Core.Tests
         {
             BcfReadResult read = Read("small-3-topics-bcf30.bcfzip");
 
-            // Метка Auto — признак автоматической выгрузки, по ней сервис
-            // отличает коллизии от заведённых руками замечаний
+            // The Auto label marks an automatic export; by it a service tells clashes
+            // from topics entered by hand
             Assert.All(read.Topics, t => Assert.Contains(BcfVocabulary.TopicLabels.Auto, t.Labels));
             Assert.Contains(read.Topics, t => t.Labels.Contains(BcfVocabulary.TopicLabels.HVAC));
         }

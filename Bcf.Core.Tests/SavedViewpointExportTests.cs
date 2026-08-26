@@ -14,9 +14,9 @@ using Xunit;
 namespace Bcf.Core.Tests
 {
     /// <summary>
-    /// Сохранённые виды как второй источник замечаний: то, что не описывается
-    /// логикой коллизий — прибор повёрнут не той стороной, труба посреди
-    /// помещения.
+    /// Saved views as the second source of topics: the things clash logic does not
+    /// describe — a device turned the wrong way round, a pipe crossing the middle
+    /// of a room.
     /// </summary>
     public class SavedViewpointExportTests
     {
@@ -155,8 +155,8 @@ namespace Bcf.Core.Tests
             BcfTopic topic = ReadBack(settings, new FakeViewpointSource(View("v-1", "Замечание"))).Topics.Single();
             BcfViewpoint viewpoint = topic.Viewpoints.Single();
 
-            // Читатель отдаёт имя файла снимка, а не байты: сам PNG лежит
-            // в архиве рядом с markup
+            // The reader hands over the file name of the snapshot rather than the bytes:
+            // the PNG itself lies in the archive beside the markup
             Assert.NotNull(viewpoint.Camera);
             Assert.False(string.IsNullOrWhiteSpace(viewpoint.SnapshotFileName));
         }
@@ -214,8 +214,8 @@ namespace Bcf.Core.Tests
                     .Export(buffer, settings, progress);
             }
 
-            // Индикатор не должен упираться в 100 % и стоять там,
-            // пока снимаются самые долгие кадры — виды
+            // The bar must not hit 100 % and stand there while the longest frames —
+            // the views — are being captured
             Assert.NotEmpty(seen);
             Assert.All(seen, state => Assert.Equal(2, state[0]));
             Assert.Equal(2, seen.Last()[1]);
@@ -278,7 +278,7 @@ namespace Bcf.Core.Tests
             }
         }
 
-        /// <summary>Документ без единой проверки: выгружаются только виды.</summary>
+        /// <summary>A document with not one clash test: only the views are exported.</summary>
         private sealed class EmptyClashSource : IClashSource
         {
             public ClashDocumentInfo GetDocument()
@@ -320,13 +320,13 @@ namespace Bcf.Core.Tests
                 _viewpoints = viewpoints.ToList();
             }
 
-            /// <summary>Идентификатор вида, на котором источник «сломается».</summary>
+            /// <summary>The identifier of the view the source "breaks" on.</summary>
             public string FailFor { get; set; }
 
-            /// <summary>Ломать ли само чтение списка видов.</summary>
+            /// <summary>Whether to break the reading of the view list itself.</summary>
             public bool FailListing { get; set; }
 
-            /// <summary>Спрашивали ли у источника список видов вообще.</summary>
+            /// <summary>Whether the source was asked for the list of views at all.</summary>
             public bool WasAsked { get; private set; }
 
             public IReadOnlyList<SavedViewpointInfo> GetSavedViewpoints()

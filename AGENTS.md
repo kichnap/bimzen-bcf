@@ -54,6 +54,40 @@ Inline `//` comments inside method bodies are English only. They are short,
 they sit next to the code they explain, and doubling them makes the code
 harder to read rather than easier.
 
+**Where the bilingual rule applies.** To `Bcf.Core` and to the two generator
+projects — the code a consumer reads, through IntelliSense or while working
+out how the vocabulary file becomes constants. `Bcf.Core.Tests` is English
+only, XML docs included: no consumer sees those, and the tests are read by
+whoever is changing them. `BcfVocabulary.g.cs` is bilingual as well, but it
+is never edited by hand — the pairs of labels come from `labels.en` and
+`labels.ru` in `bcf-vocabularies/bcf-extensions.json`.
+
+**Messages are English, topic text stays as it is.** Exception messages,
+warnings in `BcfWriteReport` and `BcfExportResult`, and the console output of
+the generators are English: they are read by whoever embeds the library. The
+text the export puts *into* topics — titles, descriptions — is a different
+matter: it reaches the coordinator who opens the file, and it is not the
+library's business to change the language of the deliverable. It is Russian
+today because that is what the first host needed; making it translatable is
+an open question, not an oversight.
+
+**Where the bilingual rule applies.** To `Bcf.Core` and to the two generator
+projects — the code a consumer reads, through IntelliSense or while working
+out how the vocabulary file becomes constants. `Bcf.Core.Tests` is English
+only, XML docs included: no consumer sees those, and the tests are read by
+whoever is changing them. `BcfVocabulary.g.cs` is bilingual as well, but it
+is never edited by hand — the pairs of labels come from `labels.en` and
+`labels.ru` in `bcf-vocabularies/bcf-extensions.json`.
+
+**Messages are English, topic text stays as it is.** Exception messages,
+warnings in `BcfWriteReport` and `BcfExportResult`, and the console output of
+the generators are English: they are read by whoever embeds the library. The
+text the export puts *into* topics — titles, descriptions — is a different
+matter: it reaches the coordinator who opens the file, and it is not the
+library's business to change the language of the deliverable. It is Russian
+today because that is what the first host needed; making it translatable is
+an open question, not an oversight.
+
 **Documents come in pairs.** `name.md` in English and `name.ru.md` in
 Russian, with a language line at the top of each. The `README` additionally
 has `README.de.md`, `README.nl.md` and `README.fi.md`.

@@ -7,9 +7,9 @@ namespace Bcf.Core.Tests
     public class IfcGuidConverterTests
     {
         /// <summary>
-        /// Настоящие GlobalId из эталонной модели buildingSMART
-        /// (BCF-XML, Test Cases/IFCs/Architectural.ifc). Проверяют разбор
-        /// на данных, которые писала чужая реализация, а не наша.
+        /// Real GlobalId values from the buildingSMART reference model
+        /// (BCF-XML, Test Cases/IFCs/Architectural.ifc). They test the parsing
+        /// against data written by someone else's implementation, not ours.
         /// </summary>
         public static TheoryData<string> RealIfcGuids => new TheoryData<string>
         {
@@ -52,9 +52,9 @@ namespace Bcf.Core.Tests
         [Fact]
         public void FirstCharacter_CarriesOnlyTwoBits()
         {
-            // 22 символа по 6 бит дают 132 бита при 128 значащих: старший символ
-            // не может быть больше '3'. Если это не так — разъехалась разбивка
-            // на группы, и файл будет читаться чужими реализациями неверно.
+            // 22 characters of 6 bits give 132 bits where 128 are significant: the
+            // leading character cannot exceed '3'. If it does, the split into groups has
+            // drifted, and other implementations will read the file wrongly.
             for (int i = 0; i < 200; i++)
             {
                 string ifcGuid = IfcGuidConverter.ToIfcGuid(Guid.NewGuid());
@@ -77,8 +77,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void RevitUniqueId_XorsElementIdIntoGuidTail()
         {
-            // Хвост эпизодного GUID 00000001 складывается по XOR с идентификатором
-            // элемента 000000ff и даёт 000000fe — это и есть весь алгоритм.
+            // The tail of the episode identifier 00000001 is XORed with the element
+            // identifier 000000ff and gives 000000fe — that is the whole algorithm.
             Guid guid = IfcGuidConverter.FromRevitUniqueId("1a2b3c4d-5e6f-4a7b-8c9d-000000000001-000000ff");
 
             Assert.Equal(Guid.ParseExact("1a2b3c4d-5e6f-4a7b-8c9d-0000000000fe", "D"), guid);
@@ -87,9 +87,9 @@ namespace Bcf.Core.Tests
         [Fact]
         public void RevitUniqueId_DifferentElements_GiveDifferentIds()
         {
-            // Главное свойство: элементы одного файла отличаются только хвостом.
-            // Если взять эпизодный GUID как есть, все элементы схлопнутся в один
-            // идентификатор и подсветка в приёмнике станет бессмысленной.
+            // The property that matters: elements of one file differ only in the tail.
+            // Taking the episode identifier as it is would collapse every element into
+            // one identifier, and the highlight in a receiving tool would mean nothing.
             string first = IfcGuidConverter.RevitUniqueIdToIfcGuid("1a2b3c4d-5e6f-4a7b-8c9d-000000000001-000000ff");
             string second = IfcGuidConverter.RevitUniqueIdToIfcGuid("1a2b3c4d-5e6f-4a7b-8c9d-000000000001-00000100");
 
@@ -99,7 +99,7 @@ namespace Bcf.Core.Tests
         [Fact]
         public void RevitUniqueId_LongElementId_UsesLowerBits()
         {
-            // С Revit 2024 идентификаторы 64-битные; в XOR участвуют младшие 32 бита
+            // From Revit 2024 the identifiers are 64-bit; the low 32 bits take part in the XOR
             Guid guid = IfcGuidConverter.FromRevitUniqueId("1a2b3c4d-5e6f-4a7b-8c9d-000000000000-1000000ff");
 
             Assert.Equal(Guid.ParseExact("1a2b3c4d-5e6f-4a7b-8c9d-0000000000ff", "D"), guid);

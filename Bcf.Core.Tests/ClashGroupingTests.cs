@@ -14,19 +14,19 @@ using Xunit;
 namespace Bcf.Core.Tests
 {
     /// <summary>
-    /// Группировка коллизий: что переживает выгрузку, а что теряется.
+    /// The grouping of clashes: what survives an export and what is lost.
     ///
-    /// Проверки написаны по разбору живой выгрузки на 1391 замечание —
-    /// плоский список компонентов группы не сохраняет разбиение на пары,
-    /// а имена несгруппированных коллизий Navisworks раздаёт заново.
+    /// The checks are written from the study of a live export of 1391 topics —
+    /// a flat component list does not preserve the split into pairs, and the names
+    /// of ungrouped clashes are handed out afresh by Navisworks.
     /// </summary>
     public class ClashGroupingTests
     {
         [Fact]
         public void GroupTopic_KeepsPairsInViewpoints()
         {
-            // Три коллизии в группе, общий элемент в двух из них: именно тот
-            // случай, когда плоский список компонентов пары теряет
+            // Three clashes in a group, one element shared by two of them: exactly the
+            // case where a flat component list loses the pairs
             var source = new FakeSource(
                 Clash("Ось А-13", "стена-1", "лоток-1"),
                 Clash("Ось А-13", "стена-1", "лоток-2"),
@@ -34,7 +34,7 @@ namespace Bcf.Core.Tests
 
             BcfTopic topic = ReadBack(Settings(), source).Topics.Single();
 
-            // Обзорная точка зрения плюс по одной на коллизию
+            // The overview viewpoint plus one per clash
             Assert.Equal(4, topic.Viewpoints.Count);
 
             IReadOnlyList<BcfViewpoint> pairs = topic.Viewpoints.Where(v => v.Index > 0).ToList();
@@ -44,8 +44,8 @@ namespace Bcf.Core.Tests
 
             BcfViewpoint overview = topic.Viewpoints.Single(v => v.Index == 0);
 
-            // В обзорной — все пять элементов без повторов: именно так пары
-            // и теряются, если других точек зрения нет
+            // The overview holds all five elements with no repeats: this is exactly how
+            // the pairs are lost when there are no other viewpoints
             Assert.Equal(5, overview.Selection.Count);
         }
 
@@ -61,8 +61,8 @@ namespace Bcf.Core.Tests
 
             BcfExportResult result = Export(settings, source);
 
-            // Секунда на кадр против пары килобайт XML: снимок снимается
-            // только для обзорной точки зрения
+            // A second per frame against a couple of kilobytes of XML: a snapshot is
+            // captured for the overview viewpoint only
             Assert.Equal(1, result.SnapshotsCaptured);
         }
 
@@ -97,8 +97,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void SingleClashTopic_IsKeyedByElements_NotByClashName()
         {
-            // Navisworks раздаёт имена «Столкновение123» заново при пересоздании
-            // проверки. Замечание, опознаваемое по имени, при этом теряет себя
+            // Navisworks hands out the "Clash123" names afresh when a test is rebuilt.
+            // A topic recognised by its name loses itself in the process
             ClashItem before = Clash(null, "стена-1", "лоток-1");
             before.DisplayName = "Столкновение7";
 
@@ -114,8 +114,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void GroupTopic_IsStillKeyedByGroupName()
         {
-            // У настоящей группы имя даёт человек, и оно устойчивее состава:
-            // приход и уход коллизий не должен плодить замечания
+            // A real group is named by a person, and the name is steadier than the
+            // membership: clashes coming and going must not breed topics
             var first = new FakeSource(Clash("Ось А-13", "стена-1", "лоток-1"));
             var second = new FakeSource(
                 Clash("Ось А-13", "стена-1", "лоток-1"),
@@ -130,8 +130,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void LegacyKey_CarriesTheIdentifierOver()
         {
-            // У пользователя, выгружавшего прежней версией, идентификатор выдан
-            // на старый ключ. Смена правила счёта не должна обернуться дублями
+            // For a user who exported with an earlier version, the identifier was issued
+            // against the old key. Changing the rule must not turn into duplicates
             ClashItem clash = Clash(null, "стена-1", "лоток-1");
             clash.DisplayName = "Столкновение7";
 
@@ -150,8 +150,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void SamePairTwice_GivesTwoTopics()
         {
-            // Труба пересекает стену дважды: пара элементов одна, а замечания
-            // должны быть разными — иначе второе затрёт первое в архиве
+            // A pipe crosses a wall twice: the pair of elements is one and the topics
+            // have to differ — otherwise the second overwrites the first in the archive
             ClashItem first = Clash(null, "стена-1", "труба-1");
             ClashItem second = Clash(null, "стена-1", "труба-1");
 
@@ -176,9 +176,9 @@ namespace Bcf.Core.Tests
         [Fact]
         public void ElementIdSources_AreCounted()
         {
-            // Потребитель сверяет свои данные с нашими по числовому
-            // идентификатору, а у составного элемента номер геометрии
-            // и номер элемента разные. Счётчик показывает, который в файле
+            // A consumer matches their data against ours by the numeric identifier, and
+            // for a composite element the number of the geometry and the number of the
+            // element differ. The counter shows which one is in the file
             ClashItem clash = Clash(null, "стена-1", "труба-1");
             clash.Elements[0].ElementIdSource = "LcRevitId/LcOaNat64AttributeValue@1";
             clash.Elements[1].ElementIdSource = "LcRevitId/LcOaNat64AttributeValue@0";
@@ -202,10 +202,10 @@ namespace Bcf.Core.Tests
         [Fact]
         public void ElementIdOrigins_AreCounted()
         {
-            // Прочитанный из свойства IFC идентификатор совпадёт с исходной
-            // моделью IFC всегда, вычисленный из UniqueId — почти всегда,
-            // внутренний Navisworks — никогда. Тому, кто сверяет выгрузку
-            // с IFC, нужно знать пропорцию
+            // An identifier read from an IFC property always matches the source IFC
+            // model, one computed from a UniqueId almost always does, and an internal
+            // Navisworks one never does. Whoever matches an export against IFC needs to
+            // know the proportion
             ClashItem clash = Clash(null, "стена-1", "труба-1");
             clash.Elements[0].Origin = ElementIdOrigin.IfcProperty;
             clash.Elements[1].Origin = ElementIdOrigin.InstanceGuid;
@@ -226,7 +226,7 @@ namespace Bcf.Core.Tests
 
             BcfTopic topic = ReadBack(settings, source).Topics.Single();
 
-            // Поштучные замечания без этого теряют принадлежность к группе совсем
+            // Without this, per-clash topics lose their group membership entirely
             Assert.Contains("Группа: Ось А-13", topic.Description);
         }
 
@@ -245,7 +245,7 @@ namespace Bcf.Core.Tests
 
             Assert.Equal(3, topics.Count);
 
-            // Звезда: второе замечание группы ссылается на первое, одиночка — ни на кого
+            // A star: the second topic of a group points at the first, a loner at nobody
             Assert.Equal(1, topics.Count(t => t.RelatedTopics.Count == 1));
             Assert.Equal(2, topics.Count(t => t.RelatedTopics.Count == 0));
         }
@@ -287,12 +287,12 @@ namespace Bcf.Core.Tests
 
             Assert.Contains("Ось А-13", topic.Labels);
 
-            // Файл обязан объявлять всё, что в нём есть, — иначе строгий
-            // приёмник вправе спросить, откуда взялась эта метка
+            // The file has to declare everything it holds — otherwise a strict receiving
+            // tool has every right to ask where this label came from
             Assert.Contains("Ось А-13", Entry(archive, "extensions.xml"));
         }
 
-        // --- вспомогательное -------------------------------------------------
+        // --- helpers ----------------------------------------------------------
 
         private static BcfExportSettings Settings()
         {
@@ -336,7 +336,7 @@ namespace Bcf.Core.Tests
             return clash;
         }
 
-        /// <summary>Один и тот же элемент между выгрузками — один и тот же идентификатор.</summary>
+        /// <summary>The same element between exports — the same identifier.</summary>
         private static Guid Deterministic(string id)
         {
             var bytes = new byte[16];

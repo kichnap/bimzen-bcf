@@ -7,9 +7,9 @@ using Xunit;
 namespace Bcf.Core.Tests
 {
     /// <summary>
-    /// Проверяет, что ресурсы действительно попали в сборку. Ломается, если
-    /// кто-то переименует папку схем или отключит EmbeddedResource в .csproj —
-    /// то есть на сборке, а не в рантайме у пользователя.
+    /// Checks that the resources really made it into the assembly. It breaks if
+    /// somebody renames the schema folder or switches EmbeddedResource off in the
+    /// .csproj — that is, at build time and not at run time on a user's machine.
     /// </summary>
     public class EmbeddedResourcesTests
     {
@@ -51,9 +51,9 @@ namespace Bcf.Core.Tests
         [Fact]
         public void Bcf21_HasNoExtensionsSchema()
         {
-            // В 2.1 справочники объявляются файлом extensions.xsd ВНУТРИ каждого
-            // архива, и генерируем его мы сами. Эталон для сверки лежит в
-            // schemas/2.1/extensions.reference.xsd и ресурсом быть не должен.
+            // In 2.1 the vocabularies are declared by an extensions.xsd file INSIDE every
+            // archive, and we generate it ourselves. The reference for comparison lies in
+            // schemas/2.1/extensions.reference.xsd and must not be a resource.
             Assert.DoesNotContain(
                 EmbeddedResources.GetNames(),
                 name => name.StartsWith(EmbeddedResources.Bcf21SchemaPrefix, StringComparison.Ordinal)

@@ -27,9 +27,9 @@ namespace Bcf.Core.Tests
         [Fact]
         public void FeetToMeters_UsesInternationalFoot()
         {
-            // Модель из Revit чаще всего приходит в футах: 100 футов = 30.48 м.
-            // Ошибка здесь незаметна в файле и видна только у координатора —
-            // замечание оказывается в трёхстах метрах от здания.
+            // A model from Revit most often arrives in feet: 100 feet = 30.48 m.
+            // An error here is invisible in the file and shows only at the coordinator's
+            // end — the topic turns out to be three hundred metres away from the building.
             Assert.Equal(30.48, UnitConverter.ToMeters(100, LengthUnit.Feet), 9);
         }
 
@@ -49,8 +49,8 @@ namespace Bcf.Core.Tests
         [InlineData(LengthUnit.Inches)]
         public void RoundTrip_ReturnsOriginalValue(LengthUnit unit)
         {
-            // Обратный перевод понадобится на втором этапе: вид из BCF
-            // нужно будет восстановить в единицах документа
+            // The reverse conversion is needed at the second stage: a view out of BCF
+            // will have to be restored in the units of the document
             var original = new Vector3(12.5, -7.25, 300.125);
 
             Vector3 restored = UnitConverter.FromMeters(UnitConverter.ToMeters(original, unit), unit);

@@ -43,7 +43,7 @@ namespace Bcf.Core.Tests
 
             Assert.False(map.IsDirty);
 
-            // Тот же ключ с тем же значением — не изменение
+            // The same key with the same value is not a change
             map.Remember(Key, guid);
             Assert.False(map.IsDirty);
 
@@ -66,8 +66,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void Map_KeepsEntriesSorted()
         {
-            // Файл лежит рядом с .nwf и попадает в систему контроля версий:
-            // произвольный порядок давал бы шум в каждом сравнении
+            // The file lies next to the model and reaches version control: an arbitrary
+            // order would give noise in every comparison
             var map = new TopicGuidMap();
             map.Remember("cccc", Guid.NewGuid());
             map.Remember("aaaa", Guid.NewGuid());
@@ -82,7 +82,7 @@ namespace Bcf.Core.Tests
         [Fact]
         public void MissingFile_IsNotAnError()
         {
-            // Так выглядит первая выгрузка документа
+            // This is what the first export of a document looks like
             TopicGuidMap map = TopicGuidMap.ReadFile(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".json"));
 
             Assert.Equal(0, map.Count);
@@ -91,8 +91,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void BrokenFile_Throws_AndDoesNotPretendToBeEmpty()
         {
-            // Молча начать с чистой карты значит продублировать на сервере
-            // все топики — пользователь обязан узнать об этом
+            // Starting from an empty map quietly means duplicating every topic on the
+            // server — the user has to be told about it
             using (var buffer = new MemoryStream(Encoding.UTF8.GetBytes("{ это не json")))
             {
                 Assert.Throws<InvalidDataException>(() => TopicGuidMap.Read(buffer));
@@ -132,13 +132,13 @@ namespace Bcf.Core.Tests
                 map.WriteFile(path);
 
                 Assert.True(File.Exists(path));
-                // Временный файл не остаётся рядом
+                // The temporary file does not stay behind
                 Assert.Empty(Directory.GetFiles(directory, "*.tmp"));
 
                 TopicGuidMap restored = TopicGuidMap.ReadFile(path);
                 Assert.Equal(1, restored.Count);
 
-                // Повторная запись поверх существующего файла не падает
+                // Writing again over an existing file does not fail
                 map.Remember("second", Guid.NewGuid());
                 map.WriteFile(path);
 

@@ -10,10 +10,10 @@ using Xunit;
 namespace Bcf.Core.Tests
 {
     /// <summary>
-    /// Числа в выходных файлах не должны зависеть от локали машины.
-    /// На русской локали форматирование по умолчанию даёт «12,5», и парсер
-    /// на стороне сервиса разваливается на координатах. Это должно быть
-    /// закрыто тестом, а не аккуратностью.
+    /// The numbers in the output files must not depend on the locale of a machine.
+    /// Under a Russian locale the default formatting gives "12,5", and a parser on
+    /// the receiving side falls apart on the coordinates. This has to be held by a
+    /// test rather than by carefulness.
     /// </summary>
     public class InvariantCultureTests
     {
@@ -83,9 +83,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void Dates_InUtc_CarryNumericOffset()
         {
-            // ISO 8601 разрешает и "Z", и "+00:00". Пишем всегда числовое
-            // смещение: одна форма на все даты — одной причиной для расхождения
-            // парсеров меньше.
+            // ISO 8601 allows both "Z" and "+00:00". A numeric offset is always written:
+            // one form for every date is one reason fewer for parsers to disagree.
             var moment = new DateTimeOffset(2026, 8, 18, 7, 30, 0, TimeSpan.Zero);
 
             Assert.Equal("2026-08-18T07:30:00+00:00", BcfNumber.Format(moment));
@@ -94,8 +93,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void UnspecifiedDateTime_IsTreatedAsLocal()
         {
-            // Navisworks отдаёт даты комментариев без указания вида;
-            // считать их UTC значит сдвинуть время на приёмнике
+            // Navisworks hands over comment dates with no kind specified;
+            // treating them as UTC would shift the time at the receiving end
             var local = new DateTime(2026, 8, 18, 10, 30, 0, DateTimeKind.Unspecified);
 
             string formatted = BcfNumber.Format(local);

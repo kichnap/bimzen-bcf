@@ -11,11 +11,11 @@ using Xunit;
 namespace Bcf.Core.Tests
 {
     /// <summary>
-    /// Схема настроек — внешний договор: по ней чужой проект собирает файл
-    /// задания, не читая наш код. Договор, разошедшийся с кодом, хуже
-    /// отсутствующего: он выглядит достоверным.
+    /// The settings schema is an external contract: another project builds a job
+    /// file from it without reading our code. A contract that has drifted from the
+    /// code is worse than a missing one: it looks trustworthy.
     ///
-    /// Поэтому схема сверяется с классом настроек на каждой сборке.
+    /// So the schema is checked against the settings class on every build.
     /// </summary>
     public class SettingsSchemaDriftTests
     {
@@ -81,9 +81,9 @@ namespace Bcf.Core.Tests
         [Fact]
         public void Schema_KeepsVocabularyOutOfItself()
         {
-            // Единственный источник значений справочника — bcf-extensions.json.
-            // Продублировать их в схеме значит завести второй, который начнёт
-            // расходиться с первым молча
+            // The single source of vocabulary values is bcf-extensions.json. Duplicating
+            // them in the schema would set up a second one, which would start drifting
+            // from the first quietly
             string text = File.ReadAllText(SchemaFile());
 
             Assert.DoesNotContain("\"Hard clash\"", text);

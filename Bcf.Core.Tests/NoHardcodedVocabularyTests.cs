@@ -9,19 +9,19 @@ using Xunit;
 namespace Bcf.Core.Tests
 {
     /// <summary>
-    /// Критерий приёмки: строк из справочника в коде быть не должно — ни
-    /// "In Progress", ни "Clash". Иначе правка справочника молча разъедется
-    /// с поведением в одном забытом месте.
+    /// The acceptance criterion: no vocabulary strings in the code — neither
+    /// "In Progress" nor "Clash". Otherwise an edit to the vocabulary drifts away
+    /// from the behaviour quietly, in one forgotten place.
     ///
-    /// Тест проходит по исходникам Bcf.Core и, если библиотека подключена
-    /// сабмодулем в плагин, по исходникам плагина тоже.
+    /// The test walks the sources of Bcf.Core and, when the library is wired into
+    /// a host as a submodule, the sources of that host too.
     /// </summary>
     public class NoHardcodedVocabularyTests
     {
         /// <summary>
-        /// Значения, которые одновременно являются статусами Clash Detective.
-        /// В коде плагина они законны: это имена ClashResultStatus, к справочнику
-        /// BCF отношения не имеющие.
+        /// The values that are Clash Detective statuses at the same time.
+        /// In host code they are legitimate: those are ClashResultStatus names, and
+        /// they have nothing to do with the BCF vocabulary.
         /// </summary>
         private static readonly HashSet<string> NavisworksStatusNames =
             new HashSet<string>(BcfVocabulary.NavisworksStatusToBcf.Keys, StringComparer.Ordinal);
@@ -50,9 +50,9 @@ namespace Bcf.Core.Tests
                 }
                 catch (IOException)
                 {
-                    // Тест ходит по живому рабочему каталогу: файл мог исчезнуть
-                    // или оказаться занят, пока идёт сборка. Это не находка,
-                    // а гонка — пропускаем такой файл, а не роняем прогон
+                    // The test walks a live working directory: a file may have gone or become
+                    // locked while the build runs. That is not a finding but a race — such a
+                    // file is skipped rather than failing the run
                     continue;
                 }
 
@@ -61,7 +61,7 @@ namespace Bcf.Core.Tests
                     string line = lines[i];
                     string trimmed = line.TrimStart();
 
-                    // Комментарии и XML-документация — текст для человека
+                    // Comments and XML documentation are text for a person
                     if (trimmed.StartsWith("//", StringComparison.Ordinal) ||
                         trimmed.StartsWith("*", StringComparison.Ordinal))
                     {
@@ -91,7 +91,7 @@ namespace Bcf.Core.Tests
                 yield return file;
             }
 
-            // Сабмодуль лежит внутри репозитория-потребителя: проверяем и его код
+            // A submodule lies inside the consuming repository: its code is checked too
             string consumerRoot = Directory.GetParent(root)?.FullName;
             if (consumerRoot == null) yield break;
 

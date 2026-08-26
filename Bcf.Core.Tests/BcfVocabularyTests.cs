@@ -10,8 +10,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void Ensure_UnknownValue_Throws()
         {
-            // Строго на выход: значение вне справочника — исключение на этапе
-            // сборки топика, а не молчаливая запись в файл.
+            // Strict on the way out: a value outside the vocabulary raises an exception
+            // while the topic is being built rather than travelling quietly into a file.
             var ex = Assert.Throws<BcfVocabularyException>(() => BcfVocabulary.EnsureTopicStatus("Открыто"));
 
             Assert.Equal("TopicStatus", ex.Field);
@@ -21,8 +21,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void IsKnown_UnknownValue_ReturnsFalse_WithoutThrowing()
         {
-            // Терпимо на вход: файл из BIMcollab или Revizto законно содержит
-            // свои статусы, отвергать его нельзя — только пометить значение чужим.
+            // Lenient on the way in: a file from BIMcollab or Revizto legitimately holds
+            // statuses of its own; it must not be rejected, only the value marked foreign.
             Assert.False(BcfVocabulary.IsKnownTopicStatus("Open"));
             Assert.True(BcfVocabulary.IsKnownTopicStatus(BcfVocabulary.TopicStatuses.New));
         }
@@ -34,7 +34,7 @@ namespace Bcf.Core.Tests
         [InlineData(" In Progress")]
         public void Comparison_IsStrict(string value)
         {
-            // Сравнение с регистром и пробелами: "In Progress" не равно ничему из этого
+            // Case and spaces count: "In Progress" equals none of these
             Assert.False(BcfVocabulary.IsKnownTopicStatus(value));
         }
 
@@ -54,7 +54,7 @@ namespace Bcf.Core.Tests
             };
 
             Assert.Equal(BcfVocabulary.TopicStatuses.Rejected, BcfVocabulary.MapNavisworksStatus("Approved", overrides));
-            // Не переопределённые статусы продолжают идти по дефолтам
+            // The statuses that were not overridden keep following the defaults
             Assert.Equal(BcfVocabulary.TopicStatuses.Assigned, BcfVocabulary.MapNavisworksStatus("Active", overrides));
         }
 
@@ -76,7 +76,7 @@ namespace Bcf.Core.Tests
         public void Transitions_FollowLifecycleModel()
         {
             Assert.True(BcfVocabulary.IsTransitionAllowed(BcfVocabulary.TopicStatuses.New, BcfVocabulary.TopicStatuses.Assigned));
-            // Resolved не конечный: подтверждает координатор, а не исполнитель
+            // Resolved is not terminal: a coordinator confirms it, not the assignee
             Assert.True(BcfVocabulary.IsTransitionAllowed(BcfVocabulary.TopicStatuses.Resolved, BcfVocabulary.TopicStatuses.Reopened));
             Assert.False(BcfVocabulary.IsTransitionAllowed(BcfVocabulary.TopicStatuses.New, BcfVocabulary.TopicStatuses.Resolved));
             Assert.False(BcfVocabulary.IsTransitionAllowed("Open", BcfVocabulary.TopicStatuses.Closed));
@@ -86,7 +86,7 @@ namespace Bcf.Core.Tests
         public void RussianLabel_FallsBackToExternalValue()
         {
             Assert.Equal("В работе", BcfVocabulary.GetRussianLabel(BcfVocabulary.TopicStatuses.LabelsRu, BcfVocabulary.TopicStatuses.InProgress));
-            // Чужое значение показывается как есть — с пометкой «внешний статус» в UI
+            // A foreign value is shown as it is — marked as an external status in the interface
             Assert.Equal("Open", BcfVocabulary.GetRussianLabel(BcfVocabulary.TopicStatuses.LabelsRu, "Open"));
         }
 
@@ -101,8 +101,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void DisciplineAndSourceLabels_AreDistinctValues()
         {
-            // SITE (раздел ГП) и Site (выявлено на площадке) — разные метки,
-            // и различает их только регистр. Сравнение обязано быть строгим.
+            // SITE (the site-plan section) and Site (found on site) are different labels,
+            // and only the case tells them apart. The comparison has to be strict.
             Assert.Equal("discipline", BcfVocabulary.TopicLabels.Groups["SITE"]);
             Assert.Equal("source", BcfVocabulary.TopicLabels.Groups["Site"]);
         }
@@ -129,8 +129,8 @@ namespace Bcf.Core.Tests
                 out skipped);
 
             Assert.Equal(new[] { "coordinator@example.com", "hvac@example.com" }, users);
-            // Пропущенные значения попадут в итоговый отчёт экспорта,
-            // а не исчезнут молча: сопоставление исполнителей неполное
+            // The skipped values reach the final export report rather than vanishing
+            // quietly: the mapping of assignees is incomplete
             Assert.Equal(new[] { "Иванов (ОВ)" }, skipped);
         }
     }

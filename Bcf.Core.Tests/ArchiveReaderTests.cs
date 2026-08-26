@@ -97,8 +97,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void ForeignStatus_IsKeptAndReported()
         {
-            // Файл из BIMcollab или Revizto законно приходит со своим словарём:
-            // отвергать его нельзя, значение надо сохранить и показать.
+            // A file from BIMcollab or Revizto legitimately arrives with a vocabulary
+            // of its own: it must not be rejected, and the value must be kept and shown.
             byte[] archive = ForeignArchive();
 
             BcfReadResult result = Read(archive);
@@ -149,7 +149,7 @@ namespace Bcf.Core.Tests
 
             BcfReadResult result = Read(archive);
 
-            // Один битый файл не должен обрушить чтение всего архива
+            // One broken file must not bring down the read of the whole archive
             Assert.Single(result.Topics);
             Assert.Contains(result.Warnings, w => w.Contains("Не удалось прочитать"));
         }
@@ -174,9 +174,9 @@ namespace Bcf.Core.Tests
         }
 
         /// <summary>
-        /// Архив «от чужого инструмента»: словарь BIMcollab вместо нашего.
-        /// Собирается вручную, потому что наш сериализатор такой файл
-        /// не выпустит — на выход валидация строгая.
+        /// An archive "from someone else's tool": the BIMcollab vocabulary instead
+        /// of ours. It is assembled by hand, because our serializer will not let such
+        /// a file out — the validation on the way out is strict.
         /// </summary>
         private static byte[] ForeignArchive()
         {

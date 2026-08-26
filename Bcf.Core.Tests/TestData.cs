@@ -16,7 +16,7 @@ using Bcf.Vocabulary.Generator;
 
 namespace Bcf.Core.Tests
 {
-    /// <summary>Общие для тестов сериализации данные и проверки по схемам.</summary>
+    /// <summary>Data and schema checks shared by the serialization tests.</summary>
     internal static class TestData
     {
         public static string RepositoryRoot
@@ -43,7 +43,7 @@ namespace Bcf.Core.Tests
             };
         }
 
-        /// <summary>Топик со всем, что плагин реально пишет из Clash Detective.</summary>
+        /// <summary>A topic with everything a host really writes out of Clash Detective.</summary>
         public static BcfTopic Topic(int number = 1)
         {
             Guid topicGuid = StableTopicKey.ToTopicGuid(
@@ -121,13 +121,13 @@ namespace Bcf.Core.Tests
             return viewpoint;
         }
 
-        /// <summary>Восемь байт заголовка PNG: содержимое снимка тестам неважно.</summary>
+        /// <summary>The eight header bytes of a PNG: the content of a snapshot does not matter here.</summary>
         public static byte[] FakePng()
         {
             return new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
         }
 
-        /// <summary>Пишет архив в память.</summary>
+        /// <summary>Writes an archive into memory.</summary>
         public static byte[] WriteArchive(BcfVersion version, params BcfTopic[] topics)
         {
             BcfWriteReport ignored;
@@ -190,7 +190,7 @@ namespace Bcf.Core.Tests
             return new UTF8Encoding(false).GetString(EntryBytes(archive, entryName));
         }
 
-        /// <summary>Распаковывает архив во временную папку — для проверки по схемам с redefine.</summary>
+        /// <summary>Unpacks an archive into a temporary folder — for checking against schemas with redefine.</summary>
         public static string Extract(byte[] archive)
         {
             string directory = Path.Combine(Path.GetTempPath(), "bcf-test-" + Guid.NewGuid().ToString("N"));
@@ -216,9 +216,9 @@ namespace Bcf.Core.Tests
         }
 
         /// <summary>
-        /// Проверяет XML по схеме. Резолвер обязателен: схемы подключают
-        /// друг друга через include и redefine, а .NET по умолчанию внешние
-        /// ссылки не разрешает.
+        /// Validates XML against a schema. A resolver is required: the schemas pull
+        /// each other in through include and redefine, and by default .NET does not
+        /// resolve external references.
         /// </summary>
         public static IReadOnlyList<string> Validate(string xml, string schemaPath)
         {

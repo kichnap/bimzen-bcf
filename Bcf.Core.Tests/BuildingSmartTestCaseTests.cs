@@ -18,13 +18,13 @@ namespace Bcf.Core.Tests
     /// before this library existed, and they are the only check of whether we
     /// read the format the way its authors meant it.
     ///
-    /// Чтение официальных эталонных архивов buildingSMART.
+    /// Reading the official buildingSMART reference archives.
     ///
-    /// Все остальные фикстуры в этом репозитории пишет наш экспортёр и читает
-    /// наш же читатель: общая ошибка обеих половин прошла бы незамеченной.
-    /// Эти архивы сделаны чужими инструментами за годы до появления этой
-    /// библиотеки, и они — единственная проверка того, понимаем ли мы формат
-    /// так же, как его авторы.
+    /// Every other fixture in this repository is written by our exporter and read
+    /// by our reader: an error shared by both halves would go unnoticed. These
+    /// archives were made by other tools years before this library existed, and
+    /// they are the only check of whether we understand the format the way its
+    /// authors do.
     /// </summary>
     public class BuildingSmartTestCaseTests
     {
@@ -33,9 +33,9 @@ namespace Bcf.Core.Tests
         /// themselves, not out of our output: an expectation copied from what
         /// the code already does checks nothing.
         ///
-        /// Что обязан дать каждый архив. Числа сняты с самих файлов, а не
-        /// с нашего вывода: ожидание, списанное с того, что код и так делает,
-        /// не проверяет ничего.
+        /// What every archive has to yield. The numbers are taken from the files
+        /// themselves and not from our output: an expectation copied from what the
+        /// code already does checks nothing.
         /// </summary>
         public static IEnumerable<object[]> Cases()
         {

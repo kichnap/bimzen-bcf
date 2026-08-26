@@ -24,9 +24,9 @@ namespace Bcf.Core.Tests
         {
             string xml = ExtensionsWriter.ToXml30(Users);
 
-            // extensions.xsd подключает shared-types.xsd, а .NET по умолчанию
-            // не разрешает внешние ссылки схем — без резолвера тип
-            // NonEmptyOrBlankString окажется необъявленным.
+            // extensions.xsd pulls in shared-types.xsd, and by default .NET does not
+            // resolve external schema references — without a resolver the
+            // NonEmptyOrBlankString type ends up undeclared.
             var schemas = new XmlSchemaSet { XmlResolver = new XmlUrlResolver() };
             string schemaDirectory = Path.Combine(RepositoryRoot, "schemas", "3.0");
             schemas.Add(null, Path.Combine(schemaDirectory, "extensions.xsd"));
@@ -50,10 +50,10 @@ namespace Bcf.Core.Tests
         [Fact]
         public void Xml30_HasSameValueSetAsReferenceFile()
         {
-            // Критерий приёмки: набор значений в выгруженном архиве совпадает
-            // с эталоном bcf-vocabularies/extensions.xml. Порядок и оформление
-            // могут отличаться — в эталоне Stages стоит перед Users, а схема
-            // требует обратного, поэтому сверяем именно наборы.
+            // The acceptance criterion: the set of values in the exported archive matches
+            // the reference bcf-vocabularies/extensions.xml. The order and the layout may
+            // differ — in the reference Stages comes before Users while the schema demands
+            // the opposite, so it is the sets that are compared.
             var generated = XDocument.Parse(ExtensionsWriter.ToXml30(Users));
             var reference = XDocument.Load(Path.Combine(RepositoryRoot, "bcf-vocabularies", "extensions.xml"));
 
@@ -71,7 +71,7 @@ namespace Bcf.Core.Tests
                 ExtensionsWriter.Write30(buffer, Users);
                 byte[] bytes = buffer.ToArray();
 
-                // BOM (EF BB BF) ломает Node-парсеры чаще, чем .NET
+                // A BOM (EF BB BF) breaks parsers outside .NET more often than .NET itself
                 Assert.False(bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF);
 
                 string text = new UTF8Encoding(false).GetString(bytes);
@@ -90,8 +90,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void Xsd21_IsCompilableSchema_WithMarkupAlongside()
         {
-            // extensions.xsd в 2.1 переопределяет типы markup.xsd через redefine,
-            // поэтому markup.xsd обязан лежать рядом — и в тесте, и в архиве.
+            // extensions.xsd in 2.1 redefines the types of markup.xsd, so markup.xsd has
+            // to lie beside it — in the test as well as in the archive.
             string directory = Path.Combine(Path.GetTempPath(), "bcf-ext-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
 
@@ -138,17 +138,17 @@ namespace Bcf.Core.Tests
         [Fact]
         public void Xsd21_DoesNotRedefineSnippetType()
         {
-            // В markup.xsd 2.1 простого типа SnippetType нет — redefine на него
-            // делает схему невалидной, хотя в некоторых чужих файлах он встречается.
+            // markup.xsd 2.1 has no simple type SnippetType — a redefine of it makes the
+            // schema invalid, even though it does turn up in some foreign files.
             Assert.DoesNotContain("SnippetType", ExtensionsWriter.ToXsd21(Users), StringComparison.Ordinal);
         }
 
         [Fact]
         public void BothVersions_ContainNoCyrillic()
         {
-            // Русские подписи живут только в UI: в файле у стороннего приёмника
-            // строка показывается пользователю буквально, а кодировки чужих
-            // парсеров — отдельный источник боли.
+            // The Russian labels live in the interface only: in a file at a third-party
+            // receiving tool the string is shown to the user literally, and the encodings
+            // of foreign parsers are a source of pain all of their own.
             AssertAscii(ExtensionsWriter.ToXml30(Users));
             AssertAscii(ExtensionsWriter.ToXsd21(Users));
         }

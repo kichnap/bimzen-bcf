@@ -60,9 +60,9 @@ namespace Bcf.Core.Tests
         [Fact]
         public void Bcf21Markup_IsValidAgainstGeneratedExtensionSchema()
         {
-            // Самая честная проверка для 2.1: markup проверяется не голой схемой,
-            // а сгенерированной extensions.xsd из этого же архива — то есть
-            // заодно проверяется, что значения справочника ей соответствуют.
+            // The most honest check for 2.1: the markup is validated not against a bare
+            // schema but against the extensions.xsd generated into this same archive —
+            // which also checks that the vocabulary values agree with it.
             BcfTopic topic = TestData.Topic();
             byte[] archive = TestData.WriteArchive(BcfVersion.Bcf21, topic);
 
@@ -97,7 +97,7 @@ namespace Bcf.Core.Tests
             Assert.Contains(BcfEntryNames.ViewpointEntry(topic.Guid, topic.Viewpoints[0].Guid), entries);
             Assert.Contains(BcfEntryNames.SnapshotEntry(topic.Guid, "snapshot.png"), entries);
 
-            // В 3.0 схема справочников не нужна: значения объявлены в extensions.xml
+            // In 3.0 no vocabulary schema is needed: the values are declared in extensions.xml
             Assert.DoesNotContain(ExtensionsWriter.Bcf21RedefinedSchema, entries);
         }
 
@@ -107,8 +107,8 @@ namespace Bcf.Core.Tests
             IReadOnlyList<string> entries = TestData.EntryNames(TestData.WriteArchive(BcfVersion.Bcf21, TestData.Topic()));
 
             Assert.Contains(ExtensionsWriter.Bcf21FileName, entries);
-            // extensions.xsd переопределяет типы markup.xsd — без самой схемы
-            // рядом объявление справочников не разрешится
+            // extensions.xsd redefines the types of markup.xsd — without that schema
+            // beside it the vocabulary declaration will not resolve
             Assert.Contains(ExtensionsWriter.Bcf21RedefinedSchema, entries);
         }
 
@@ -117,8 +117,8 @@ namespace Bcf.Core.Tests
         [InlineData(BcfVersion.Bcf21)]
         public void EntryNames_AreAsciiAndUseForwardSlashes(BcfVersion version)
         {
-            // Заголовок топика и имя модели в тесте нарочно кириллические:
-            // в имена записей это просочиться не должно
+            // The topic title and the model name in the test are non-ASCII on purpose:
+            // none of it may seep into the entry names
             foreach (string name in TestData.EntryNames(TestData.WriteArchive(version, TestData.Topic())))
             {
                 Assert.All(name, c => Assert.True(c < 128, "Не-ASCII в имени записи: " + name));
@@ -178,7 +178,7 @@ namespace Bcf.Core.Tests
             byte[] archive = TestData.WriteArchive(BcfVersion.Bcf30, topic);
             string markup = TestData.EntryText(archive, BcfEntryNames.MarkupEntry(topic.Guid));
 
-            // Схема 3.0 проверяет GUID шаблоном [a-f0-9], заглавные не пройдут
+            // The 3.0 schema checks identifiers against an [a-f0-9] pattern; upper case fails
             Assert.Contains(topic.Guid.ToString("D").ToLowerInvariant(), markup, StringComparison.Ordinal);
             Assert.DoesNotContain(topic.Guid.ToString("D").ToUpperInvariant(), markup, StringComparison.Ordinal);
         }
@@ -197,7 +197,7 @@ namespace Bcf.Core.Tests
                 string viewpoint = TestData.EntryText(
                     archive, BcfEntryNames.ViewpointEntry(topic.Guid, topic.Viewpoints[0].Guid));
 
-                // 10 футов = 3.048 м. С запятой это значение развалит парсер на Node
+                // 10 feet = 3.048 m. With a comma this value breaks a parser outside .NET
                 Assert.Contains("<X>3.048</X>", viewpoint, StringComparison.Ordinal);
                 Assert.Empty(TestData.Validate(viewpoint, TestData.SchemaPath(BcfVersion.Bcf30, "visinfo.xsd")));
             }
@@ -279,8 +279,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void Bcf30_ViewpointWithoutCamera_Throws()
         {
-            // В 3.0 камера обязательна: выбор между двумя типами объявлен
-            // без minOccurs="0"
+            // In 3.0 a camera is mandatory: the choice between the two types is declared
+            // without minOccurs="0"
             BcfTopic topic = TestData.Topic();
             topic.Viewpoints[0].Camera = null;
 
@@ -319,8 +319,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void ManyTopics_AreWrittenAsStream()
         {
-            // Пятьсот замечаний — как в эталонном наборе для серверной команды.
-            // Проверяем, что каждое доехало и архив не собирается в памяти целиком.
+            // Five hundred topics, as in the reference set handed to other teams.
+            // The check is that every one arrived and the archive is not built in memory whole.
             var topics = Enumerable.Range(1, 500).Select(TestData.Topic).ToArray();
 
             BcfWriteReport report;
@@ -330,7 +330,7 @@ namespace Bcf.Core.Tests
             Assert.Equal(500, report.ViewpointsWritten);
             Assert.Equal(500, report.SnapshotsWritten);
 
-            // bcf.version, project.bcfp, extensions.xml + по три записи на топик
+            // bcf.version, project.bcfp, extensions.xml plus three entries per topic
             Assert.Equal(3 + 500 * 3, TestData.EntryNames(archive).Count);
         }
 

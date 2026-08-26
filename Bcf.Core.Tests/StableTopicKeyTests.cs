@@ -20,8 +20,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void ElementOrder_DoesNotMatter()
         {
-            // Navisworks может поменять местами элемент 1 и элемент 2 между
-            // прогонами — на ключ это влиять не должно
+            // Navisworks may swap element 1 and element 2 between runs — that must not
+            // affect the key
             Assert.Equal(
                 StableTopicKey.ForClash("ОВ vs КР", new[] { Pair[0], Pair[1] }),
                 StableTopicKey.ForClash("ОВ vs КР", new[] { Pair[1], Pair[0] }));
@@ -54,9 +54,9 @@ namespace Bcf.Core.Tests
         [Fact]
         public void GroupKey_IgnoresMembership()
         {
-            // Состав группы меняется от выгрузки к выгрузке; если считать ключ
-            // по составу, каждое изменение давало бы новый топик — дубль ровно
-            // там, где группировка и нужна
+            // The membership of a group changes from export to export; counting the key
+            // over the membership would give a new topic on every change — a duplicate
+            // exactly where the grouping is wanted
             Assert.Equal(
                 StableTopicKey.ForGroup("ОВ vs КР", "Этаж 3"),
                 StableTopicKey.ForGroup("ОВ vs КР", "Этаж 3"));
@@ -85,7 +85,7 @@ namespace Bcf.Core.Tests
         [Fact]
         public void TopicGuid_MatchesBcfPattern()
         {
-            // Схема 3.0 проверяет GUID шаблоном и заглавные буквы отвергает
+            // The 3.0 schema checks identifiers against a pattern and rejects upper case
             string guid = StableTopicKey.FormatGuid(StableTopicKey.ToTopicGuid(StableTopicKey.ForClash("t", Pair)));
 
             Assert.Matches("^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", guid);
@@ -97,7 +97,7 @@ namespace Bcf.Core.Tests
             Guid guid = StableTopicKey.ToTopicGuid(StableTopicKey.ForClash("t", Pair));
             byte[] bytes = guid.ToByteArray();
 
-            // Вариант RFC 4122 в старших битах девятого байта
+            // The RFC 4122 variant in the high bits of the ninth byte
             Assert.Equal(0x80, bytes[8] & 0xC0);
         }
 
@@ -118,11 +118,11 @@ namespace Bcf.Core.Tests
         [Fact]
         public void KnownInput_HasPinnedKeyAndGuid()
         {
-            // Значения закреплены намеренно. Ключ и выведенный из него GUID —
-            // это то, чем связаны выгрузки разных недель и записи на сервере.
-            // Любое изменение алгоритма продублирует у клиента все топики,
-            // поэтому такой тест обязан упасть и заставить об этом подумать,
-            // а не тихо поменять поведение.
+            // The values are pinned on purpose. The key and the identifier derived from
+            // it are what ties the exports of different weeks to the records on a server.
+            // Any change to the algorithm duplicates every topic at the client, so a test
+            // like this one has to fail and make somebody think about it rather than let
+            // the behaviour change quietly.
             string key = StableTopicKey.ForClash(
                 "Clash Test 1",
                 new[] { "1111111111111111111111", "2222222222222222222222" });

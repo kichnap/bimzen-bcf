@@ -79,8 +79,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void GroupStatus_IsTheMostOpenOne()
         {
-            // Группа закрыта только тогда, когда закрыта целиком: иначе
-            // незакрытая часть работы пропадёт из виду координатора
+            // A group is closed only when it is closed entirely: otherwise the part of
+            // the work that is still open drops out of the coordinator's sight
             var source = new FakeClashSource(
                 Clash("Этаж 3", "Approved"),
                 Clash("Этаж 3", "New"));
@@ -94,9 +94,9 @@ namespace Bcf.Core.Tests
         [Fact]
         public void RepeatedExport_KeepsTopicGuids()
         {
-            // Повторная выгрузка того же набора не должна плодить дубли:
-            // идентификаторы коллизий Navisworks пересоздаются при Reset теста,
-            // поэтому топик привязан к устойчивому ключу, а не к ним
+            // A repeat export of the same set must not breed duplicates: Navisworks
+            // regenerates clash identifiers when a test is reset, so a topic is tied to
+            // the stable key and not to them
             var source = new FakeClashSource(Clash("Этаж 3", "New"), Clash("Этаж 4", "New"));
 
             IReadOnlyList<Guid> first = TopicGuids(source, Settings());
@@ -125,9 +125,9 @@ namespace Bcf.Core.Tests
 
             using (var cts = new CancellationTokenSource())
             {
-                // Не Progress<T>: он доставляет вызов через контекст
-                // синхронизации, то есть уже после выхода из using —
-                // и отмена прилетала освобождённому источнику токена
+                // Not Progress<T>: it delivers the call through a synchronization
+                // context, that is, after the using block has been left —
+                // and the cancellation reached a token source already disposed
                 var progress = new ImmediateProgress(p =>
                 {
                     if (p.ProcessedClashes >= 25) cts.Cancel();
@@ -152,9 +152,9 @@ namespace Bcf.Core.Tests
 
             var seen = new List<double>();
 
-            // Штатный Progress<T> доставляет вызовы через контекст синхронизации,
-            // то есть в другом потоке и когда придётся: список успевал остаться
-            // пустым к моменту проверки. Экспорт синхронный — приёмник тоже
+            // The stock Progress<T> delivers calls through a synchronization context,
+            // that is, on another thread and whenever it likes: the list managed to stay
+            // empty until the assertion. The export is synchronous — so is this sink
             var progress = new ImmediateProgress(p => seen.Add(p.Fraction));
 
             Export(source, Settings(), progress);
@@ -242,7 +242,7 @@ namespace Bcf.Core.Tests
 
             BcfExportResult result = Export(source, Settings());
 
-            // Топик всё равно создаётся — без точки зрения, но с данными
+            // The topic is created all the same — without a viewpoint, but with the data
             Assert.Equal(2, result.TopicsCreated);
             Assert.Contains(result.Warnings, w => w.Contains("was not obtained"));
         }
@@ -265,8 +265,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void PreviouslyIssuedGuid_WinsOverDeterministicOne()
         {
-            // Так выглядит топик, идентификатор которому выдал сервер:
-            // повторная выгрузка обязана попасть в него, а не создать рядом второй
+            // This is what a topic whose identifier a server issued looks like:
+            // a repeat export has to land in it rather than create a second one beside it
             var source = new FakeClashSource(Clash("Этаж 3", "New"));
 
             var map = new TopicGuidMap();
@@ -295,8 +295,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void MapSurvivesRestart_AndKeepsTopicsStable()
         {
-            // Между выгрузками Navisworks закрывают: карта уходит на диск
-            // и возвращается оттуда, идентификаторы не должны поменяться
+            // Between exports Navisworks is closed: the map goes to disk and comes back
+            // from there, and the identifiers must not change
             var source = new FakeClashSource(Clash("Этаж 3", "New"));
             var map = new TopicGuidMap();
 
@@ -320,8 +320,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void SnapshotSettings_ReachTheSource()
         {
-            // Режим съёмки и всё, что к нему прилагается, задаёт пользователь
-            // в диалоге; источник обязан получить их без изменений
+            // The capture mode and everything that goes with it are set by the user in
+            // the dialog; the source has to receive them unchanged
             var source = new FakeClashSource(Clash("Этаж 3", "New"));
 
             BcfExportSettings settings = Settings();
@@ -343,8 +343,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void EmptySnapshots_AreCountedSeparately()
         {
-            // «Снято 51» при 51 пустом кадре — это не отчёт, а дезинформация:
-            // ровно так выглядела первая выгрузка на реальной модели
+            // "51 captured" with 51 empty frames is not a report but misinformation:
+            // that is exactly how the first export against a real model looked
             var source = new FakeClashSource(Clash("Этаж 3", "New"), Clash("Этаж 4", "New"))
             {
                 ReportEmptySnapshots = true
@@ -451,10 +451,10 @@ namespace Bcf.Core.Tests
         }
 
         /// <summary>
-        /// Источник-заглушка. Ровно то, ради чего порт узкий: экспорт целиком
-        /// проверяется без Navisworks.
+        /// A stub source. Precisely what a narrow port is for: the whole export is
+        /// tested without Navisworks.
         /// </summary>
-        /// <summary>Приёмник прогресса, выполняющий обработчик сразу и в том же потоке.</summary>
+        /// <summary>A progress sink that runs the handler at once and on the same thread.</summary>
         private sealed class ImmediateProgress : IProgress<BcfExportProgress>
         {
             private readonly Action<BcfExportProgress> _handler;
@@ -479,13 +479,13 @@ namespace Bcf.Core.Tests
                 _clashes = clashes.ToList();
             }
 
-            /// <summary>Имя группы, на которой источник «сломается».</summary>
+            /// <summary>The name of the group the source "breaks" on.</summary>
             public string FailViewpointFor { get; set; }
 
-            /// <summary>Запрос, с которым источник просили снять последний кадр.</summary>
+            /// <summary>The request the source was last asked to capture a frame with.</summary>
             public SnapshotRequest LastRequest { get; private set; }
 
-            /// <summary>Отдавать ли снимки как пустые кадры.</summary>
+            /// <summary>Whether to hand back snapshots as empty frames.</summary>
             public bool ReportEmptySnapshots { get; set; }
 
             public ClashDocumentInfo GetDocument()

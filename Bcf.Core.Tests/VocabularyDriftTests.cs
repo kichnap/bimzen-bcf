@@ -10,10 +10,10 @@ using Xunit;
 namespace Bcf.Core.Tests
 {
     /// <summary>
-    /// Главная защита от расхождения справочника и кода: тест генерирует
-    /// константы заново из bcf-extensions.json и сверяет с закоммиченным файлом.
-    /// Правка справочника без перегенерации роняет сборку, а не всплывает
-    /// у пользователя странным значением в выгрузке.
+    /// The main defence against the vocabulary and the code drifting apart: the
+    /// test generates the constants afresh from bcf-extensions.json and compares
+    /// them with the committed file. An edit to the vocabulary without a
+    /// regeneration fails the build instead of surfacing as an odd value later.
     /// </summary>
     public class VocabularyDriftTests
     {
@@ -34,8 +34,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void EmbeddedVocabulary_MatchesFileOnDisk()
         {
-            // Ресурс в сборке и файл в репозитории — один и тот же справочник.
-            // Разойтись они могут только если кто-то сломал EmbeddedResource в .csproj.
+            // The resource in the assembly and the file in the repository are one and the
+            // same vocabulary. They can differ only if somebody broke EmbeddedResource.
             string onDisk = File.ReadAllText(RepositoryPaths.VocabularyFile(RepositoryRoot));
 
             Assert.Equal(
@@ -74,9 +74,9 @@ namespace Bcf.Core.Tests
         [Fact]
         public void ApprovedMapsToClosed_ByAgreedDefault()
         {
-            // Спорное место, решённое заказчиком: Approved в Clash Detective —
-            // это «исправление проверено и принято». Альтернатива Rejected
-            // («пересечение признано допустимым») задаётся в диалоге экспорта.
+            // A contentious point settled by the client: Approved in Clash Detective means
+            // "the fix has been verified and accepted". The alternative, Rejected ("the
+            // intersection was accepted as tolerable"), is set in the export settings.
             Assert.Equal(BcfVocabulary.TopicStatuses.Closed, BcfVocabulary.NavisworksStatusToBcf["Approved"]);
         }
 

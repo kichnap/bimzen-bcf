@@ -15,10 +15,10 @@ using Xunit;
 namespace Bcf.Core.Tests
 {
     /// <summary>
-    /// Обновление существующего архива.
+    /// Updating an existing archive.
     ///
-    /// Файл, побывавший у приёмника, — не наш черновик: в нём чужие статусы,
-    /// комментарии и вложения. Повторная выгрузка обязана их пережить.
+    /// A file that has been through a receiving tool is not our draft: it holds
+    /// foreign statuses, comments and attachments. A repeat export has to spare them.
     /// </summary>
     public class ArchiveUpdateTests
     {
@@ -52,7 +52,7 @@ namespace Bcf.Core.Tests
             BcfExportSettings settings = Settings(BcfUpdateMode.AppendNew);
             ClashItem clash = Clash("Этаж 3");
 
-            // Первая выгрузка создаёт файл, вторая идёт поверх него
+            // The first export creates the file, the second goes over it
             byte[] first = Export(Settings(BcfUpdateMode.Overwrite), clash);
 
             BcfTopic before = Read(first).Topics.Single();
@@ -152,7 +152,7 @@ namespace Bcf.Core.Tests
 
             string extensions = ReadEntry(LastArchive, "extensions.xml");
 
-            // Файл, который мы пишем, обязан объявлять всё, что в нём есть
+            // The file we write has to declare everything it holds
             Assert.Contains("На согласовании", extensions);
         }
 
@@ -173,8 +173,8 @@ namespace Bcf.Core.Tests
         [Fact]
         public void TopicsNotInTheExportStayInTheFile()
         {
-            // Коллизия разобрана и в проверку больше не попадает: замечание
-            // о ней должно остаться в файле, а не исчезнуть
+            // The clash is resolved and no longer appears in the test: the topic
+            // about it must stay in the file rather than vanish
             byte[] existing = Existing(Topic("разобранная коллизия"));
 
             BcfExportResult result = Run(Settings(BcfUpdateMode.AppendNew), existing, out BcfReadResult read, Clash("Этаж 4"));
@@ -202,9 +202,9 @@ namespace Bcf.Core.Tests
             Assert.Equal(before.CreationDate, read.Topics.Single().CreationDate);
         }
 
-        // --- вспомогательное -------------------------------------------------
+        // --- helpers ----------------------------------------------------------
 
-        /// <summary>Байты последнего записанного архива — для проверок на уровне записей.</summary>
+        /// <summary>The bytes of the last archive written — for entry-level checks.</summary>
         private byte[] LastArchive { get; set; }
 
         private static BcfExportSettings Settings(BcfUpdateMode mode)
@@ -264,7 +264,7 @@ namespace Bcf.Core.Tests
             }
         }
 
-        /// <summary>Архив с одним чужим замечанием, каким его отдал бы приёмник.</summary>
+        /// <summary>An archive with one foreign topic, the way a receiving tool would hand it over.</summary>
         private static byte[] Existing(BcfTopic topic)
         {
             using (var buffer = new MemoryStream())
@@ -275,7 +275,7 @@ namespace Bcf.Core.Tests
                     Author = "receiver@example.com",
                     Project = new BcfProject { Name = "Тестовый проект", ProjectId = Guid.NewGuid().ToString("D") },
 
-                    // Чужие статусы — обычное дело: словари стандарт не фиксирует
+                    // Foreign statuses are an everyday thing: the standard does not fix the vocabularies
                     ValidateVocabulary = false
                 }))
                 {
@@ -325,7 +325,7 @@ namespace Bcf.Core.Tests
             return clash;
         }
 
-        /// <summary>Комментарий, оставленный в приёмнике.</summary>
+        /// <summary>A comment left in a receiving tool.</summary>
         private static byte[] WithReceiverComment(byte[] archive, Guid topicGuid, string text)
         {
             return Rewrite(archive, topicGuid, markup =>
@@ -352,7 +352,7 @@ namespace Bcf.Core.Tests
             });
         }
 
-        /// <summary>Ссылка на документ — то, чего наша модель не хранит.</summary>
+        /// <summary>A document reference — the kind of thing our model does not keep.</summary>
         private static byte[] WithDocumentReference(byte[] archive, Guid topicGuid)
         {
             return Rewrite(archive, topicGuid, markup => markup.Replace(
