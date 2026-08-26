@@ -26,13 +26,20 @@ Preparing the first public release as a standalone component.
 - MIT licence, English as the language of the repository, `README` in five
   languages and `AGENTS.md` with the conventions.
 - Bilingual XML documentation across the public API: English states the
-  contract, Russian carries the reasoning.
+  contract, Russian carries the reasoning. The same for the two generator
+  projects and for the generated `BcfVocabulary.g.cs`, whose per-value labels
+  now come from `labels.en` alongside `labels.ru`.
 - NuGet package metadata for `BimZen.Bcf.Core`.
 
 ### Changed
 
 - The library no longer describes itself in terms of the closed products
   that embed it. Hosts are referred to as hosts.
+- Exception messages, export warnings and the console output of the
+  generators are English: they are read by whoever embeds the library. The
+  text the export puts into topics is untouched — that reaches the
+  coordinator who opens the file, and changing its language is not the
+  library's call to make.
 
 ## What the library already does
 
