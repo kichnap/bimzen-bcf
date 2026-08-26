@@ -5,7 +5,7 @@
 [![Build](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml/badge.svg)](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Target](https://img.shields.io/badge/target-netstandard2.0-blue.svg)](Bcf.Core/Bcf.Core.csproj)
-[![BCF](https://img.shields.io/badge/BCF-3.0%20%7C%202.1-blue.svg)](https://github.com/buildingSMART/BCF-XML)
+[![BCF](https://img.shields.io/badge/BCF-3.0%20%7C%202.1%20%7C%202.0%20read-blue.svg)](https://github.com/buildingSMART/BCF-XML)
 
 **A .NET library for the buildingSMART Collaboration Format (BCF), plus the
 single source of truth for the vocabularies that go with it.**
@@ -20,7 +20,7 @@ against the official buildingSMART XSDs on every build.
 | Area | What you get |
 |---|---|
 | Write | BCF 3.0 and BCF 2.1 — two independent serializers, not one parameterised writer |
-| Read | Lenient by design: unknown statuses and types from other tools are preserved, never rejected |
+| Read | BCF 3.0, 2.1 and 2.0 (read-only). Lenient by design: unknown statuses and types from other tools are preserved, never rejected |
 | Update | Append to an existing archive without losing what a receiving tool put there |
 | Camera | Perspective and orthogonal, quaternion to direction and up vector, per-version limits |
 | Units | Any host unit to the metres BCF requires |
@@ -129,6 +129,12 @@ dotnet run --project Bcf.TestData.Generator
 
 Builds the fixtures in `test-data/` with the real exporter, byte-for-byte
 reproducibly. Details in [`test-data/README.md`](test-data/README.md).
+
+Next to them, in [`test-data/buildingsmart/`](test-data/buildingsmart/README.md),
+lie the official test cases from the buildingSMART repository. They were
+written by other tools, so reading them is the only outside check of whether
+this library understands the format the way its authors do — everything else
+in `test-data/` we both write and read ourselves.
 
 ## Schemas
 

@@ -399,6 +399,8 @@ namespace Bcf.Core.Serialization
                     viewpoint.Selection.Add(ReadComponent(component));
                 }
 
+                ReadLegacyComponents(viewpoint, components);
+
                 XElement visibility = components.Element("Visibility");
                 if (visibility != null)
                 {
@@ -436,6 +438,42 @@ namespace Bcf.Core.Serialization
                     Direction = ReadVector(plane.Element("Direction"))
                 });
             }
+        }
+
+        /// <summary>
+        /// Components as BCF 2.0 stored them: one flat list where selection and
+        /// visibility are attributes of the element rather than sections of
+        /// their own.
+        ///
+        /// Without this a 2.0 archive reads as topics with no components at
+        /// all — the file looks fine and quietly means nothing.
+        ///
+        /// Компоненты в том виде, в каком их хранил BCF 2.0: один плоский
+        /// список, где выделение и видимость — атрибуты элемента, а не
+        /// отдельные разделы.
+        ///
+        /// Без этого архив 2.0 читается как замечания вовсе без компонентов:
+        /// файл выглядит целым и молча ничего не значит.
+        /// </summary>
+        private static void ReadLegacyComponents(BcfViewpoint viewpoint, XElement components)
+        {
+            List<XElement> flat = components.Elements("Component").ToList();
+            if (flat.Count == 0) return;
+
+            var visibility = new BcfVisibility { DefaultVisibility = true };
+
+            foreach (XElement element in flat)
+            {
+                BcfComponent component = ReadComponent(element);
+
+                if (ReadBool(element.Attribute("Selected"))) viewpoint.Selection.Add(component);
+
+                // In 2.0 a component is visible unless it says otherwise
+                XAttribute visible = element.Attribute("Visible");
+                if (visible != null && !ReadBool(visible)) visibility.Exceptions.Add(component);
+            }
+
+            if (viewpoint.Visibility == null) viewpoint.Visibility = visibility;
         }
 
         private static BcfComponent ReadComponent(XElement element)

@@ -9,6 +9,16 @@ namespace Bcf.Core
     public enum BcfVersion
     {
         /// <summary>
+        /// 2.0 — read only. Archives in this version still turn up; they are
+        /// read as far as 2.0 and 2.1 agree, but nothing is ever written in it.
+        ///
+        /// 2.0 — только чтение. Архивы этой версии до сих пор встречаются;
+        /// они читаются в той мере, в какой 2.0 совпадает с 2.1, но записать
+        /// в ней нельзя ничего.
+        /// </summary>
+        Bcf20,
+
+        /// <summary>
         /// 2.1 — for receiving tools where 3.0 is not supported everywhere yet.
         /// 2.1 — для приёмников, где 3.0 поддержан не везде.
         /// </summary>
@@ -39,6 +49,7 @@ namespace Bcf.Core
         {
             switch (version)
             {
+                case BcfVersion.Bcf20: return "2.0";
                 case BcfVersion.Bcf21: return "2.1";
                 case BcfVersion.Bcf30: return "3.0";
                 default: throw new ArgumentOutOfRangeException(nameof(version), version, null);
@@ -49,16 +60,17 @@ namespace Bcf.Core
         /// Parses the VersionId value read from bcf.version.
         /// Разбирает значение VersionId, прочитанное из bcf.version.
         /// </summary>
-        /// <param name="versionId">The attribute value, "2.1" or "3.0".</param>
+        /// <param name="versionId">The attribute value: "2.0", "2.1" or "3.0".</param>
         public static BcfVersion Parse(string versionId)
         {
             switch (versionId)
             {
+                case "2.0": return BcfVersion.Bcf20;
                 case "2.1": return BcfVersion.Bcf21;
                 case "3.0": return BcfVersion.Bcf30;
                 default:
                     throw new NotSupportedException(
-                        "BCF version '" + (versionId ?? "<null>") + "' is not supported: this library handles 2.1 and 3.0.");
+                        "BCF version '" + (versionId ?? "<null>") + "' is not supported: this library reads 2.0, 2.1 and 3.0.");
             }
         }
     }

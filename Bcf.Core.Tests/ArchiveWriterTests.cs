@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Bcf.Core;
@@ -344,6 +345,19 @@ namespace Bcf.Core.Tests
 
             Assert.Equal(0, report.SnapshotsWritten);
             Assert.DoesNotContain(TestData.EntryNames(archive), n => n.EndsWith(".png", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public void Bcf20_IsReadOnly_AndTheWriterSaysSo()
+        {
+            // Old archives are read as a courtesy; writing 2.0 would mean
+            // a third serializer for a version nobody asks to receive
+            var buffer = new MemoryStream();
+
+            NotSupportedException error = Assert.Throws<NotSupportedException>(
+                () => BcfArchiveWriter.Create(buffer, new BcfWriteOptions { Version = BcfVersion.Bcf20 }));
+
+            Assert.Contains("2.0", error.Message);
         }
     }
 }

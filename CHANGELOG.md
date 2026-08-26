@@ -16,6 +16,13 @@ Preparing the first public release as a standalone component.
 
 ### Added
 
+- Reading BCF 2.0 archives. They still turn up, and until now they were read
+  as topics with no components at all: 2.0 keeps components in a flat list
+  where selection and visibility are attributes. Writing 2.0 is refused with
+  a clear message — reading old files is a courtesy, producing them is not.
+- The official buildingSMART test cases as fixtures. Every other fixture here
+  is written and read by this library alone; these were written by other
+  tools, and they are the only outside check of the reader.
 - MIT licence, English as the language of the repository, `README` in five
   languages and `AGENTS.md` with the conventions.
 - Bilingual XML documentation across the public API: English states the

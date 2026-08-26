@@ -45,7 +45,7 @@ namespace Bcf.Core.Tests
         }
 
         [Theory]
-        [InlineData("Version", typeof(BcfVersion))]
+
         [InlineData("Grouping", typeof(ClashGroupingMode))]
         [InlineData("SnapshotMode", typeof(SnapshotMode))]
         [InlineData("SnapshotIsolation", typeof(SnapshotIsolation))]
@@ -64,6 +64,18 @@ namespace Bcf.Core.Tests
             }
 
             Assert.Equal(Enum.GetNames(enumType).Length, declared.Count);
+        }
+
+        [Fact]
+        public void Schema_ListsOnlyTheVersionsThatCanBeWritten()
+        {
+            // BCF 2.0 is in the enum because archives in it are read, but it
+            // must not appear among the export settings: offering a version
+            // the writer refuses would be a lie told by the contract itself
+            var declared = new HashSet<string>(
+                SchemaProperties()["Version"]["enum"].Select(v => (string)v), StringComparer.Ordinal);
+
+            Assert.Equal(new[] { "Bcf21", "Bcf30" }, declared.OrderBy(v => v, StringComparer.Ordinal));
         }
 
         [Fact]

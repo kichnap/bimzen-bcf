@@ -70,6 +70,13 @@ namespace Bcf.Core.Serialization
             {
                 case BcfVersion.Bcf30: return new Bcf30ArchiveWriter(destination, options);
                 case BcfVersion.Bcf21: return new Bcf21ArchiveWriter(destination, options);
+
+                case BcfVersion.Bcf20:
+                    // Reading 2.0 is a courtesy to old archives; writing it would
+                    // mean shipping a third serializer for a version nobody asks
+                    // to receive any more.
+                    throw new NotSupportedException(
+                        "BCF 2.0 archives can be read but not written. Choose 2.1 or 3.0.");
                 default:
                     throw new ArgumentOutOfRangeException(nameof(options), options.Version, "Неизвестная версия BCF.");
             }

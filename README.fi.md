@@ -5,7 +5,7 @@
 [![Build](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml/badge.svg)](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Target](https://img.shields.io/badge/target-netstandard2.0-blue.svg)](Bcf.Core/Bcf.Core.csproj)
-[![BCF](https://img.shields.io/badge/BCF-3.0%20%7C%202.1-blue.svg)](https://github.com/buildingSMART/BCF-XML)
+[![BCF](https://img.shields.io/badge/BCF-3.0%20%7C%202.1%20%7C%202.0%20read-blue.svg)](https://github.com/buildingSMART/BCF-XML)
 
 **.NET-kirjasto buildingSMART Collaboration Format -muodolle (BCF) ja samalla
 ainoa totuuden lähde siihen kuuluville sanastoille.**
@@ -21,7 +21,7 @@ käännöksessä.
 | Alue | Mitä saat |
 |---|---|
 | Kirjoitus | BCF 3.0 ja BCF 2.1 — kaksi erillistä sarjallistajaa, ei yhtä valitsimella |
-| Luku | Tarkoituksella salliva: muiden työkalujen tuntemattomat tilat ja tyypit säilyvät eikä niitä koskaan hylätä |
+| Luku | BCF 3.0, 2.1 ja 2.0 (vain luku). Tarkoituksella salliva: muiden työkalujen tuntemattomat tilat ja tyypit säilyvät eikä niitä koskaan hylätä |
 | Päivitys | Lisää olemassa olevaan arkistoon menettämättä sitä, mitä vastaanottava työkalu on sinne jättänyt |
 | Kamera | Perspektiivi ja ortogonaali, kvaternio suunnaksi ja ylösvektoriksi, versiokohtaiset rajat |
 | Yksiköt | Mikä tahansa isännän yksikkö BCF:n vaatimiksi metreiksi |
@@ -131,6 +131,11 @@ dotnet run --project Bcf.TestData.Generator
 
 Rakentaa `test-data/`-hakemiston fixtuurit oikealla viejällä, tavulleen
 toistettavasti. Yksityiskohdat: [`test-data/README.md`](test-data/README.md).
+
+Niiden vieressä hakemistossa [`test-data/buildingsmart/`](test-data/buildingsmart/README.md)
+ovat buildingSMARTin viralliset testitapaukset. Ne on kirjoitettu muilla
+työkaluilla, joten niiden lukeminen on ainoa ulkopuolinen tarkistus siitä,
+ymmärtääkö tämä kirjasto muodon samoin kuin sen tekijät.
 
 ## Skeemat
 

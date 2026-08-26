@@ -5,7 +5,7 @@
 [![Build](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml/badge.svg)](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Target](https://img.shields.io/badge/target-netstandard2.0-blue.svg)](Bcf.Core/Bcf.Core.csproj)
-[![BCF](https://img.shields.io/badge/BCF-3.0%20%7C%202.1-blue.svg)](https://github.com/buildingSMART/BCF-XML)
+[![BCF](https://img.shields.io/badge/BCF-3.0%20%7C%202.1%20%7C%202.0%20read-blue.svg)](https://github.com/buildingSMART/BCF-XML)
 
 **Библиотека .NET для формата buildingSMART Collaboration Format (BCF)
 и единственный источник правды для справочников, которые к нему прилагаются.**
@@ -20,7 +20,7 @@
 | Область | Что даёт |
 |---|---|
 | Запись | BCF 3.0 и BCF 2.1 — два независимых сериализатора, а не один с параметром |
-| Чтение | Терпимое по замыслу: незнакомые статусы и типы из чужих инструментов сохраняются, а не отвергаются |
+| Чтение | BCF 3.0, 2.1 и 2.0 (только чтение). Терпимое по замыслу: незнакомые статусы и типы из чужих инструментов сохраняются, а не отвергаются |
 | Обновление | Дописать в существующий архив, не потеряв того, что положил туда приёмник |
 | Камера | Перспектива и ортогональ, кватернион в направление и вектор верха, ограничения версий |
 | Единицы | Любые единицы хоста в метры, которых требует BCF |
@@ -130,6 +130,12 @@ dotnet run --project Bcf.TestData.Generator
 
 Собирает фикстуры в `test-data/` настоящим экспортёром и побайтово
 воспроизводимо. Подробности — в [`test-data/README.md`](test-data/README.md).
+
+Рядом, в [`test-data/buildingsmart/`](test-data/buildingsmart/README.ru.md),
+лежат официальные эталонные архивы из репозитория buildingSMART. Их писали
+чужие инструменты, поэтому их чтение — единственная внешняя проверка того,
+понимает ли библиотека формат так же, как его авторы: всё остальное
+в `test-data/` мы и пишем, и читаем сами.
 
 ## Схемы
 
