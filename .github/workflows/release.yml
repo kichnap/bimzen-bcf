@@ -36,9 +36,9 @@ jobs:
       PUBLISHING: ${{ github.event_name == 'push' || inputs.publish }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0.x
 
@@ -90,7 +90,7 @@ jobs:
         if: env.PUBLISHING != 'true'
         run: echo "The package was built and nuget.org issued a key. Nothing was published."
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nupkg
           path: artifacts/*
