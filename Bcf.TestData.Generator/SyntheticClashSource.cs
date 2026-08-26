@@ -9,6 +9,12 @@ using Bcf.Core.Geometry;
 namespace Bcf.TestData.Generator
 {
     /// <summary>
+    /// The source of clashes for the reference archives.
+    ///
+    /// The data is synthetic yet shaped exactly like what comes out of Clash
+    /// Detective: non-ASCII names of tests and levels, pairs of elements with
+    /// IFC identifiers, comments, distances.
+    ///
     /// Источник коллизий для эталонных архивов.
     ///
     /// Данные синтетические, но по форме такие же, как приходят из Clash
@@ -30,9 +36,9 @@ namespace Bcf.TestData.Generator
         private readonly DateTimeOffset _moment;
         private readonly byte[] _snapshot;
 
-        /// <param name="topicCount">Сколько замечаний должно получиться: по одной группе на замечание.</param>
-        /// <param name="moment">Фиксированное время — эталонные файлы должны быть воспроизводимыми.</param>
-        /// <param name="snapshot">Снимок; null — архив без изображений.</param>
+        /// <param name="topicCount">How many topics should come out: one group per topic.</param>
+        /// <param name="moment">The fixed time — reference files have to be reproducible.</param>
+        /// <param name="snapshot">The snapshot; null gives an archive with no images.</param>
         public SyntheticClashSource(int topicCount, DateTimeOffset moment, byte[] snapshot)
         {
             _topicCount = topicCount;
@@ -88,9 +94,9 @@ namespace Bcf.TestData.Generator
 
         public ClashViewpointData CreateViewpoint(ClashItem clash, SnapshotRequest snapshot, CancellationToken cancellationToken)
         {
-            // Свой устойчивый хеш, а не String.GetHashCode: в .NET он
-            // рандомизирован на каждый процесс, и эталонные архивы переставали
-            // бы совпадать побайтово от прогона к прогону
+            // A stable hash of our own rather than String.GetHashCode: in .NET
+            // that one is randomised per process, and the reference archives
+            // would stop matching byte for byte from run to run
             int index = (int)(StableHash(clash.DisplayName) % 360);
             double angle = index * Math.PI / 180.0;
 
@@ -114,7 +120,10 @@ namespace Bcf.TestData.Generator
             return data;
         }
 
-        /// <summary>Хеш FNV-1a: одинаковый в любом процессе и на любой платформе.</summary>
+        /// <summary>
+        /// The FNV-1a hash: the same in any process and on any platform.
+        /// Хеш FNV-1a: одинаковый в любом процессе и на любой платформе.
+        /// </summary>
         private static uint StableHash(string value)
         {
             uint hash = 2166136261;
@@ -128,7 +137,10 @@ namespace Bcf.TestData.Generator
             return hash;
         }
 
-        /// <summary>Замечания распределены по проверкам примерно поровну.</summary>
+        /// <summary>
+        /// The topics are spread across the tests roughly evenly.
+        /// Замечания распределены по проверкам примерно поровну.
+        /// </summary>
         private int ClashesInTest(int testIndex)
         {
             int perTest = _topicCount / Tests.Length;
@@ -146,7 +158,7 @@ namespace Bcf.TestData.Generator
             {
                 TestId = test.Id,
                 TestName = test.Name,
-                // Одна группа — одно замечание: имена групп различаются внутри проверки
+                // One group makes one topic: the group names differ within a test
                 GroupName = "Этаж " + level.ToString(CultureInfo.InvariantCulture) +
                             " — зона " + (char)('А' + index % 4),
                 DisplayName = "Столкновение " + (index + 1).ToString(CultureInfo.InvariantCulture),
@@ -180,8 +192,8 @@ namespace Bcf.TestData.Generator
 
         private static ClashElementInfo Element(int global, int side, string discipline)
         {
-            // Идентификатор выводится из Revit UniqueId тем же путём, что
-            // и при настоящей выгрузке: эталон должен быть похож на боевой файл
+            // The identifier is derived from a Revit UniqueId the same way as in
+            // a real export: a reference file has to look like a live one
             string uniqueId = string.Format(
                 CultureInfo.InvariantCulture,
                 "1a2b3c4d-5e6f-4a7b-8c9d-{0:D12}-{1:x8}",

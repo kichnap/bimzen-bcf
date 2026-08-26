@@ -10,18 +10,33 @@ using Bcf.Vocabulary.Generator;
 namespace Bcf.TestData.Generator
 {
     /// <summary>
+    /// The generator of the reference archives in the test-data folder.
+    ///
+    ///   dotnet run --project Bcf.TestData.Generator
+    ///
+    /// The files travel to other teams as fixtures for import tests, so two
+    /// things matter: they are built by the real exporter (rather than written
+    /// by hand) and they are reproducible byte for byte — the export time and
+    /// the timestamps of the archive entries are fixed.
+    ///
     /// Генератор эталонных архивов для папки test-data.
     ///
     ///   dotnet run --project Bcf.TestData.Generator
     ///
-    /// Файлы уходят команде онлайн-сервиса как фикстуры для тестов импорта,
-    /// поэтому важны две вещи: они собираются настоящим экспортёром (а не
-    /// написаны руками) и воспроизводимы побайтово — время выгрузки и метки
-    /// времени записей архива зафиксированы.
+    /// Файлы уходят другим командам как фикстуры для тестов импорта, поэтому
+    /// важны две вещи: они собираются настоящим экспортёром (а не написаны
+    /// руками) и воспроизводимы побайтово — время выгрузки и метки времени
+    /// записей архива зафиксированы.
     /// </summary>
     public static class Program
     {
-        /// <summary>Фиксированный момент выгрузки — иначе каждый прогон менял бы все файлы.</summary>
+        /// <summary>
+        /// The fixed moment of the export — otherwise every run would change
+        /// every file.
+        ///
+        /// Фиксированный момент выгрузки — иначе каждый прогон менял бы все
+        /// файлы.
+        /// </summary>
         private static readonly DateTimeOffset Moment =
             new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.FromHours(3));
 
@@ -35,18 +50,18 @@ namespace Bcf.TestData.Generator
 
                 byte[] snapshot = PngWriter.Create(320, 240, 0x2F, 0x6F, 0xB2);
 
-                // Маленький набор — в режиме «группа = замечание», как выгружают
-                // обычно. Большой — «каждая коллизия отдельно»: только так
-                // получается ровно 500 замечаний, и заодно это худший случай
-                // по размеру, ради которого фикстура и нужна
+                // The small set uses the group-per-topic mode, the way people
+                // usually export. The large one uses topic-per-clash: only that
+                // gives exactly 500 topics, and it is at the same time the worst
+                // case by size, which is what the fixture is for
                 Write(directory, "small-3-topics-bcf30.bcfzip", 3, BcfVersion.Bcf30, snapshot,
                     ClashGroupingMode.GroupPerTopic, maxSnapshots: 0);
                 Write(directory, "small-3-topics-bcf21.bcfzip", 3, BcfVersion.Bcf21, snapshot,
                     ClashGroupingMode.GroupPerTopic, maxSnapshots: 0);
 
-                // Снимки только у первых пятидесяти: пятьсот картинок раздули бы
-                // файл в репозитории до мегабайтов, а импортёру важно увидеть
-                // и замечания со снимком, и замечания без него
+                // Snapshots only for the first fifty: five hundred pictures would
+                // swell the file in the repository to megabytes, while an importer
+                // needs to see both topics with a snapshot and topics without
                 Write(directory, "large-500-topics-bcf30.bcfzip", 500, BcfVersion.Bcf30, snapshot,
                     ClashGroupingMode.ClashPerTopic, maxSnapshots: 50);
                 Write(directory, "large-500-topics-bcf21.bcfzip", 500, BcfVersion.Bcf21, snapshot,
@@ -99,22 +114,28 @@ namespace Bcf.TestData.Generator
 
                 if (!result.Succeeded)
                 {
-                    throw new InvalidOperationException("Не удалось собрать " + fileName + ": " + result.Error);
+                    throw new InvalidOperationException("Could not build " + fileName + ": " + result.Error);
                 }
 
                 File.WriteAllBytes(path, buffer.ToArray());
             }
 
             Console.WriteLine(
-                fileName + ": замечаний " + result.TopicsCreated +
-                ", снимков " + result.SnapshotsCaptured +
-                ", размер " + new FileInfo(path).Length / 1024 + " КБ");
+                fileName + ": topics " + result.TopicsCreated +
+                ", snapshots " + result.SnapshotsCaptured +
+                ", size " + new FileInfo(path).Length / 1024 + " KB");
         }
 
         /// <summary>
+        /// An archive with values outside the vocabulary — the way BIMcollab or
+        /// Revizto would send one, with vocabularies of their own. Such a file is
+        /// legitimate: the standard does not fix the vocabularies. Our exporter
+        /// cannot create one (the validation on the way out is strict), so it is
+        /// built by substituting values inside a finished archive.
+        ///
         /// Архив со значениями вне справочника — как его прислал бы BIMcollab
         /// или Revizto со своими словарями. Такой файл законен: стандарт словари
-        /// не фиксирует. Наш экспортёр его создать не может (на выход валидация
+        /// не фиксирует. Наш экспортёр создать его не может (на выход валидация
         /// строгая), поэтому он собирается подменой значений в готовом архиве.
         /// </summary>
         private static void WriteForeignValues(string directory)
@@ -160,7 +181,7 @@ namespace Bcf.TestData.Generator
                 File.WriteAllBytes(target, output.ToArray());
             }
 
-            Console.WriteLine("foreign-values-bcf30.bcfzip: статусы и типы подменены на значения вне справочника");
+            Console.WriteLine("foreign-values-bcf30.bcfzip: statuses and types replaced with values outside the vocabulary");
         }
     }
 }

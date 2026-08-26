@@ -5,13 +5,21 @@ using System.IO.Compression;
 namespace Bcf.TestData.Generator
 {
     /// <summary>
+    /// A minimal PNG encoder.
+    ///
+    /// The reference archives travel to other teams as import fixtures, so the
+    /// snapshots inside them have to be real pictures any viewer opens, not a
+    /// stub of eight signature bytes. System.Drawing is deliberately left out:
+    /// the generator has to work outside Windows too, and the result has to be
+    /// reproducible byte for byte.
+    ///
     /// Минимальный кодировщик PNG.
     ///
-    /// Эталонные архивы уходят команде сервиса как фикстуры для импорта,
-    /// поэтому снимки в них должны быть настоящими картинками, которые
-    /// открывает любой просмотрщик, а не заглушкой из восьми байт подписи.
-    /// System.Drawing не используется намеренно: генератор должен работать
-    /// и вне Windows, а результат — быть побайтово воспроизводимым.
+    /// Эталонные архивы уходят другим командам как фикстуры для импорта,
+    /// поэтому снимки в них должны быть настоящими картинками, которые откроет
+    /// любой просмотрщик, а не заглушкой из восьми байт подписи. System.Drawing
+    /// намеренно не используется: генератор должен работать и вне Windows,
+    /// а результат — быть побайтово воспроизводимым.
     /// </summary>
     internal static class PngWriter
     {
@@ -40,16 +48,20 @@ namespace Bcf.TestData.Generator
             WriteBigEndian(header, 0, (uint)width);
             WriteBigEndian(header, 4, (uint)height);
 
-            header[8] = 8;  // бит на канал
-            header[9] = 2;  // тип цвета: RGB без палитры
-            header[10] = 0; // сжатие: deflate
-            header[11] = 0; // фильтрация: стандартная
-            header[12] = 0; // без чересстрочности
+            header[8] = 8;  // bits per channel
+            header[9] = 2;  // colour type: RGB with no palette
+            header[10] = 0; // compression: deflate
+            header[11] = 0; // filtering: the standard one
+            header[12] = 0; // no interlacing
 
             return header;
         }
 
         /// <summary>
+        /// The rows of the image: each is preceded by a filter byte. The
+        /// picture is a vertical gradient, so that a snapshot does not look like
+        /// an empty square.
+        ///
         /// Строки изображения: перед каждой идёт байт фильтра. Картинка —
         /// вертикальный градиент, чтобы снимок не выглядел пустым квадратом.
         /// </summary>
@@ -60,7 +72,7 @@ namespace Bcf.TestData.Generator
 
             for (int y = 0; y < height; y++)
             {
-                raw[position++] = 0; // фильтр None
+                raw[position++] = 0; // the None filter
 
                 double shade = 0.55 + 0.45 * y / Math.Max(1, height - 1);
 
@@ -79,7 +91,7 @@ namespace Bcf.TestData.Generator
         {
             using (var buffer = new MemoryStream())
             {
-                // Заголовок zlib: deflate, окно 32K, без словаря
+                // The zlib header: deflate, a 32K window, no dictionary
                 buffer.WriteByte(0x78);
                 buffer.WriteByte(0x9C);
 
