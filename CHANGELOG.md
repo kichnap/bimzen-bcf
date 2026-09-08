@@ -12,6 +12,14 @@ update.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.1.0] - 2026-09-09
+
+A minor number rather than a patch: nothing here breaks, but the export now
+writes components where it wrote none, and that is a visible change of
+behaviour for a consumer rather than a quiet repair.
+
 ### Fixed
 
 - An element with no IFC GUID reaches the viewpoint selection by its
@@ -95,5 +103,6 @@ public release is not an empty page.
 - **Vocabularies** generated from a single JSON file, with tests that fail
   the build if the generated constants drift from it.
 
-[Unreleased]: https://github.com/kichnap/bimzen-bcf/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/kichnap/bimzen-bcf/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.1.0
 [1.0.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.0.0

@@ -23,7 +23,7 @@
        library; the sources stay public for reading and contributing. -->
   <PropertyGroup>
     <PackageId>BimZen.Bcf.Core</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>kichnap</Authors>
     <Description>A .NET library for the buildingSMART Collaboration Format (BCF): the model, readers and writers for BCF 3.0 and 2.1, camera and unit converters, IFC GUID conversion, and a single source of truth for the vocabularies. Targets netstandard2.0 and has no runtime dependencies.</Description>
     <PackageTags>bcf;buildingsmart;openbim;ifc;bim;clash-detection;bcfzip</PackageTags>
