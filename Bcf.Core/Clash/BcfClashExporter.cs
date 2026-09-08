@@ -613,9 +613,12 @@ namespace Bcf.Core.Clash
                 return null;
             }
 
-            if (data?.Camera == null) return null;
+            // The warning goes into the report before the early exit: a source
+            // that could not build a camera and said why must not be answered
+            // with silence — a view is missing and the report explains nothing
+            if (data != null && !string.IsNullOrWhiteSpace(data.Warning)) result.Warn(data.Warning);
 
-            if (!string.IsNullOrWhiteSpace(data.Warning)) result.Warn(data.Warning);
+            if (data?.Camera == null) return null;
 
             if (data.Snapshot != null && data.Snapshot.Length > 0)
             {
@@ -1060,9 +1063,12 @@ namespace Bcf.Core.Clash
                 return null;
             }
 
-            if (data == null || data.Camera == null) return null;
+            // The warning goes into the report before the early exit: a source
+            // that could not build a camera and said why must not be answered
+            // with silence — a view is missing and the report explains nothing
+            if (data != null && !string.IsNullOrWhiteSpace(data.Warning)) result.Warn(data.Warning);
 
-            if (!string.IsNullOrWhiteSpace(data.Warning)) result.Warn(data.Warning);
+            if (data == null || data.Camera == null) return null;
 
             var viewpoint = new BcfViewpoint
             {

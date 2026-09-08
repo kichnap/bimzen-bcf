@@ -356,6 +356,158 @@ namespace Bcf.Core.Tests
             Assert.Equal(2, result.SnapshotsEmpty);
         }
 
+        [Fact]
+        public void ElementWithoutIfcGuid_ReachesTheSelectionByItsElementId()
+        {
+            // In a Revit -> Navisworks exchange IFC takes no part at all, and not one
+            // element has an IFC GUID. The number is what the receiving side finds the
+            // element by, so a component built on it alone is the whole selection there
+            ClashItem clash = Clash("Этаж 3", "New");
+            clash.Elements[0].IfcGuid = null;
+            clash.Elements[0].Origin = ElementIdOrigin.None;
+            clash.Elements[1].IfcGuid = null;
+            clash.Elements[1].Origin = ElementIdOrigin.None;
+
+            BcfTopic topic = SingleTopic(new FakeClashSource(clash), Settings());
+            IList<BcfComponent> selection = topic.Viewpoints.Single().Selection;
+
+            Assert.Equal(2, selection.Count);
+            Assert.Equal(new[] { "123456", "654321" }, selection.Select(c => c.AuthoringToolId).ToArray());
+            Assert.All(selection, c => Assert.Null(c.IfcGuid));
+        }
+
+        [Fact]
+        public void SameElementIdInTwoModels_MakesTwoComponents()
+        {
+            // A clash is a meeting of elements of different models, and the number
+            // 123456 exists in each of them: deduplicating by the bare number merges
+            // two different elements into one component, and the file does not show it
+            ClashItem clash = Clash("Этаж 3", "New");
+            clash.Elements[0].IfcGuid = null;
+            clash.Elements[0].Origin = ElementIdOrigin.None;
+            clash.Elements[1].IfcGuid = null;
+            clash.Elements[1].Origin = ElementIdOrigin.None;
+            clash.Elements[1].ElementId = clash.Elements[0].ElementId;
+
+            BcfTopic topic = SingleTopic(new FakeClashSource(clash), Settings());
+            IList<BcfComponent> selection = topic.Viewpoints.Single().Selection;
+
+            Assert.Equal(2, selection.Count);
+            Assert.NotEqual(clash.Elements[0].ModelFileName, clash.Elements[1].ModelFileName);
+        }
+
+        [Fact]
+        public void SameElementIdInOneModel_StillMakesOneComponent()
+        {
+            // The number is unique inside its model, and there the old deduplication
+            // rule keeps working: the model and the number together are the key
+            ClashItem clash = Clash("Этаж 3", "New");
+            clash.Elements[0].IfcGuid = null;
+            clash.Elements[0].Origin = ElementIdOrigin.None;
+            clash.Elements[1].IfcGuid = null;
+            clash.Elements[1].Origin = ElementIdOrigin.None;
+
+            clash.Elements.Add(new ClashElementInfo
+            {
+                ElementId = clash.Elements[0].ElementId,
+                ModelFileName = clash.Elements[0].ModelFileName,
+                Path = "Модель > Этаж 3 > Воздуховод",
+                Origin = ElementIdOrigin.None
+            });
+
+            BcfTopic topic = SingleTopic(new FakeClashSource(clash), Settings());
+
+            Assert.Equal(2, topic.Viewpoints.Single().Selection.Count);
+        }
+
+        [Fact]
+        public void ElementWithNeitherIdentifier_IsNotInTheSelection()
+        {
+            // A component with no identifier at all highlights nothing and carries
+            // nothing the schema can hold
+            ClashItem clash = Clash("Этаж 3", "New");
+            clash.Elements[1].IfcGuid = null;
+            clash.Elements[1].ElementId = null;
+            clash.Elements[1].Origin = ElementIdOrigin.None;
+
+            BcfTopic topic = SingleTopic(new FakeClashSource(clash), Settings());
+
+            Assert.Single(topic.Viewpoints.Single().Selection);
+        }
+
+        [Fact]
+        public void ElementWithIfcGuid_IsWrittenAsBefore()
+        {
+            // The consumer that has IFC GUIDs must see no change whatsoever
+            BcfTopic topic = SingleTopic(new FakeClashSource(Clash("Этаж 3", "New")), Settings());
+            BcfComponent component = topic.Viewpoints.Single().Selection[0];
+
+            Assert.Equal("2SugUv4EX5LAhcVpDp2dUH", component.IfcGuid);
+            Assert.Equal("Navisworks", component.OriginatingSystem);
+            Assert.Equal("123456", component.AuthoringToolId);
+        }
+
+        [Fact]
+        public void ComponentWithoutIfcGuid_IsValidAgainstTheSchema()
+        {
+            // IfcGuid is declared without use="required" in both versions, and the
+            // attribute is simply absent rather than written empty: an empty one would
+            // break the length of 22
+            ClashItem clash = Clash("Этаж 3", "New");
+            clash.Elements[0].IfcGuid = null;
+            clash.Elements[0].Origin = ElementIdOrigin.None;
+            clash.Elements[1].IfcGuid = null;
+            clash.Elements[1].Origin = ElementIdOrigin.None;
+
+            foreach (BcfVersion version in new[] { BcfVersion.Bcf21, BcfVersion.Bcf30 })
+            {
+                BcfExportSettings settings = Settings();
+                settings.Version = version;
+
+                byte[] archive;
+                using (var buffer = new MemoryStream())
+                {
+                    BcfExportResult result = new BcfClashExporter(new FakeClashSource(clash)).Export(buffer, settings);
+                    Assert.True(result.Succeeded, result.Error?.ToString());
+                    archive = buffer.ToArray();
+                }
+
+                BcfReadResult read;
+                using (var buffer = new MemoryStream(archive))
+                {
+                    read = BcfArchiveReader.Read(buffer);
+                }
+
+                BcfTopic topic = read.Topics.Single();
+                BcfViewpoint viewpoint = topic.Viewpoints.Single();
+
+                Assert.Equal(2, viewpoint.Selection.Count);
+
+                string xml = TestData.EntryText(archive, BcfEntryNames.ViewpointEntry(topic.Guid, viewpoint.Guid));
+
+                Assert.DoesNotContain("IfcGuid", xml);
+                Assert.Empty(TestData.Validate(xml, TestData.SchemaPath(version, "visinfo.xsd")));
+            }
+        }
+
+        [Fact]
+        public void SourceWarningWithoutCamera_ReachesTheReport()
+        {
+            // A source that could not build a camera and said why must not be answered
+            // with silence: there is no viewpoint, and without the warning the report
+            // says nothing about it while the file looks whole
+            var source = new FakeClashSource(Clash("Этаж 3", "New"))
+            {
+                Cameraless = true,
+                ViewpointWarning = "The clash lies outside the loaded models."
+            };
+
+            BcfExportResult result = Export(source, Settings());
+
+            Assert.Equal(1, result.TopicsCreated);
+            Assert.Contains("The clash lies outside the loaded models.", result.Warnings);
+        }
+
         private static BcfExportSettings Settings()
         {
             return new BcfExportSettings
@@ -488,6 +640,12 @@ namespace Bcf.Core.Tests
             /// <summary>Whether to hand back snapshots as empty frames.</summary>
             public bool ReportEmptySnapshots { get; set; }
 
+            /// <summary>Whether the source hands back no camera at all.</summary>
+            public bool Cameraless { get; set; }
+
+            /// <summary>What the source says about the viewpoint it handed back.</summary>
+            public string ViewpointWarning { get; set; }
+
             public ClashDocumentInfo GetDocument()
             {
                 var document = new ClashDocumentInfo
@@ -531,10 +689,13 @@ namespace Bcf.Core.Tests
 
                 var data = new ClashViewpointData
                 {
-                    Camera = CameraConverter.ToPerspective(
-                        new Vector3(10, 10, 10), Rotation.Identity, Math.PI / 4, 4.0 / 3.0, LengthUnit.Meters),
-                    Snapshot = snapshot.Enabled ? TestData.FakePng() : null,
-                    SnapshotIsEmpty = snapshot.Enabled && ReportEmptySnapshots
+                    Camera = Cameraless
+                        ? null
+                        : CameraConverter.ToPerspective(
+                            new Vector3(10, 10, 10), Rotation.Identity, Math.PI / 4, 4.0 / 3.0, LengthUnit.Meters),
+                    Snapshot = snapshot.Enabled && !Cameraless ? TestData.FakePng() : null,
+                    SnapshotIsEmpty = snapshot.Enabled && !Cameraless && ReportEmptySnapshots,
+                    Warning = ViewpointWarning
                 };
 
                 return data;

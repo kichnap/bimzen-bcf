@@ -212,7 +212,22 @@ namespace Bcf.Core.Clash
 
         /// <summary>
         /// The elements of every clash of the topic, with no repeats.
+        ///
+        /// An element reaches the selection when it has an IFC GUID or an
+        /// authoring-tool identifier. Only one of the two is enough: the schema
+        /// declares IfcGuid optional and keeps AuthoringToolId as an element of
+        /// its own, and in an exchange where IFC takes no part the number of the
+        /// element is the only thing by which the receiving side finds it.
+        /// An element carrying neither is skipped — it says nothing.
+        ///
         /// Элементы всех коллизий замечания, без повторов.
+        ///
+        /// Элемент попадает в выделение, когда у него есть IFC GUID или номер
+        /// в исходной системе. Достаточно одного из двух: схема объявляет
+        /// IfcGuid необязательным, а AuthoringToolId держит самостоятельным
+        /// элементом, и в обмене, где IFC не участвует вовсе, номер элемента —
+        /// единственное, по чему приёмник его найдёт. Элемент без того
+        /// и другого пропускается: он не говорит ничего.
         /// </summary>
         /// <param name="clashes">The clashes to take the elements from.</param>
         public static IReadOnlyList<BcfComponent> Components(IReadOnlyList<ClashItem> clashes)
@@ -222,17 +237,53 @@ namespace Bcf.Core.Clash
 
             foreach (ClashElementInfo element in clashes.SelectMany(c => c.Elements))
             {
-                if (string.IsNullOrWhiteSpace(element.IfcGuid)) continue;
-                if (!seen.Add(element.IfcGuid)) continue;
+                bool hasGuid = !string.IsNullOrWhiteSpace(element.IfcGuid);
+                bool hasElementId = !string.IsNullOrWhiteSpace(element.ElementId);
 
-                components.Add(new BcfComponent(element.IfcGuid)
+                if (!hasGuid && !hasElementId) continue;
+                if (!seen.Add(DuplicateKey(element, hasGuid))) continue;
+
+                components.Add(new BcfComponent
                 {
+                    IfcGuid = hasGuid ? element.IfcGuid : null,
                     OriginatingSystem = "Navisworks",
-                    AuthoringToolId = element.ElementId
+                    AuthoringToolId = hasElementId ? element.ElementId : null
                 });
             }
 
             return components;
+        }
+
+        /// <summary>
+        /// The key an element is deduplicated by. It carries where the
+        /// identifier was taken from, and for an authoring-tool number the model
+        /// as well.
+        ///
+        /// Two identifiers out of two different namespaces must not meet in one
+        /// set, and an element number is unique only inside its model: a clash
+        /// is a meeting of elements of different models, and the number 123456
+        /// exists in each of them. Deduplicating by the bare number would merge
+        /// two different elements into one component, and nothing in the file
+        /// would show it.
+        ///
+        /// Ключ, по которому отсеиваются повторы. Несёт, откуда взят
+        /// идентификатор, а для номера исходной системы — ещё и модель.
+        ///
+        /// Идентификаторы из двух разных пространств не должны встретиться
+        /// в одном множестве, а номер элемента уникален только внутри своей
+        /// модели: коллизия — встреча элементов разных моделей, и номер 123456
+        /// есть в каждой из них. Отсев по голому номеру склеил бы два разных
+        /// элемента в один компонент, и по файлу этого было бы не видно.
+        /// </summary>
+        /// <param name="element">The element to build a key for.</param>
+        /// <param name="hasGuid">Whether the element has an IFC GUID.</param>
+        private static string DuplicateKey(ClashElementInfo element, bool hasGuid)
+        {
+            // The separator is invalid in a file name and cannot occur in an IFC
+            // GUID, so the parts of the key cannot run into one another
+            if (hasGuid) return "ifc|" + element.IfcGuid;
+
+            return "id|" + element.ModelFileName + "|" + element.ElementId;
         }
 
         /// <summary>
