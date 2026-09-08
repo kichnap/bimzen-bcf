@@ -121,6 +121,31 @@ else's archive is preserved as-is: the standard defines the mechanism for
 vocabularies but does not fix their contents, and a file from BIMcollab or
 Revizto legitimately arrives with its own statuses.
 
+**An element reaches the selection by either identifier.** A component is
+written when the element has an IFC GUID or an authoring-tool number; only
+one of the two is enough. `IfcGuid` is optional in both schemas, and in an
+exchange where IFC takes no part — Revit into Navisworks, say — the number is
+the only thing the receiving side can find the element by. An element with
+neither is skipped.
+
+Repeats are dropped by a key that carries where the identifier came from, and
+for a number the model as well: an element number is unique only inside its
+model, and a clash is a meeting of elements of different models, so the same
+number legitimately occurs in each of them.
+
+**A component cannot name its model — a known limitation.** The schema gives
+`Component` only `IfcGuid`, `OriginatingSystem` and `AuthoringToolId`, and no
+place for a model. `OriginatingSystem` stays `Navisworks` — it says which tool
+the export was taken with, which is what the field means — so in a federated
+model of several models a receiving tool sees two numbers and cannot tell
+which belongs to which. The pairing is in the file elsewhere: the models are
+listed in the topic header, and with `IncludeElementPaths` the description
+carries the path, the model file name and the number for each element of the
+first clash of the topic. Putting the model name into `OriginatingSystem`, or
+a composite `model:number` into `AuthoringToolId`, would either lie about a
+standard field or invent a private encoding a receiver has to know in advance;
+both were weighed and refused.
+
 **Invariant culture everywhere.** Numbers and dates are written through
 `CultureInfo.InvariantCulture`. The tests run under three locales, Turkish
 among them.

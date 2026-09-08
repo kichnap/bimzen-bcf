@@ -189,6 +189,23 @@ namespace Bcf.Core.Tests
         }
 
         [Fact]
+        public void SourceWarningWithoutCamera_ReachesTheReport()
+        {
+            // The same rule as for a clash: a source that could not build a camera and
+            // said why must not be answered with silence
+            var viewpoints = new FakeViewpointSource(View("v-1", "Замечание"))
+            {
+                CameralessFor = "v-1",
+                ViewpointWarning = "The view refers to a model that is not loaded."
+            };
+
+            BcfExportResult result = Export(Settings(), viewpoints);
+
+            Assert.True(result.Succeeded);
+            Assert.Contains("The view refers to a model that is not loaded.", result.Warnings);
+        }
+
+        [Fact]
         public void UnreadableSource_WarnsInsteadOfFailing()
         {
             var viewpoints = new FakeViewpointSource { FailListing = true };
@@ -326,6 +343,12 @@ namespace Bcf.Core.Tests
             /// <summary>Whether to break the reading of the view list itself.</summary>
             public bool FailListing { get; set; }
 
+            /// <summary>The identifier of the view the source hands back no camera for.</summary>
+            public string CameralessFor { get; set; }
+
+            /// <summary>What the source says about the view it handed back.</summary>
+            public string ViewpointWarning { get; set; }
+
             /// <summary>Whether the source was asked for the list of views at all.</summary>
             public bool WasAsked { get; private set; }
 
@@ -346,17 +369,22 @@ namespace Bcf.Core.Tests
                     throw new InvalidOperationException("вид недоступен");
                 }
 
+                bool cameraless = CameralessFor != null && viewpoint.Id == CameralessFor;
+
                 var data = new ClashViewpointData
                 {
-                    Camera = CameraConverter.ToPerspective(
-                        new Vector3(1, 2, 3),
-                        new Rotation(0, 0, 1, 0),
-                        Math.PI / 4,
-                        4.0 / 3.0,
-                        LengthUnit.Meters)
+                    Camera = cameraless
+                        ? null
+                        : CameraConverter.ToPerspective(
+                            new Vector3(1, 2, 3),
+                            new Rotation(0, 0, 1, 0),
+                            Math.PI / 4,
+                            4.0 / 3.0,
+                            LengthUnit.Meters),
+                    Warning = ViewpointWarning
                 };
 
-                if (snapshot.Enabled) data.Snapshot = TestData.FakePng();
+                if (snapshot.Enabled && !cameraless) data.Snapshot = TestData.FakePng();
 
                 return data;
             }

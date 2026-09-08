@@ -12,7 +12,25 @@ update.
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- An element with no IFC GUID reaches the viewpoint selection by its
+  authoring-tool number. It used to be dropped along with the number that was
+  filled in beside it, so an export out of an exchange where IFC takes no part
+  produced topics with an empty `Selection`: text and a camera, and nothing the
+  receiving side could highlight. `IfcGuid` is optional in both schemas, and
+  the topic key had long treated the number as a full replacement for the GUID.
+  An element with neither identifier is still skipped.
+- Repeats among components are dropped by a key that carries where the
+  identifier came from, and for a number the model as well. An element number
+  is unique only inside its model, and a clash is a meeting of elements of
+  different models: deduplicating by the bare number would merge two different
+  elements into one component, and the file would not show it.
+- A warning from the source reaches the export report even when no camera came
+  back with it. The check used to sit below the early exit, so a source that
+  could not build a camera and said why got silence: no viewpoint, nothing in
+  the report, and a file that looks whole. Both the clash viewpoints and the
+  saved views were affected.
 
 ## [1.0.0] - 2026-08-27
 
