@@ -164,8 +164,9 @@ comes back as a result rather than an exception thrown at the caller.
 git clone https://github.com/kichnap/bimzen-bcf.git
 ```
 
-Then reference the project `Bcf.Core/Bcf.Core.csproj`. A NuGet package
-(`BimZen.Bcf.Core`) is being prepared and will become the recommended way.
+Then reference the project `Bcf.Core/Bcf.Core.csproj`. That is the way to
+work on the library itself; to use it, take the package `BimZen.Bcf.Core` from
+nuget.org — it is the recommended way and carries no runtime dependencies.
 
 The `Bcf.Core.Tests` suite builds for `net48` and `net8.0` and needs nothing
 but xUnit — no modelling application is required to run it.

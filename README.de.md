@@ -2,6 +2,7 @@
 
 # bimzen-bcf
 
+[![NuGet](https://img.shields.io/nuget/v/BimZen.Bcf.Core.svg?color=blue)](https://www.nuget.org/packages/BimZen.Bcf.Core)
 [![Build](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml/badge.svg)](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Target](https://img.shields.io/badge/target-netstandard2.0-blue.svg)](Bcf.Core/Bcf.Core.csproj)
@@ -57,8 +58,13 @@ zwingend ist. Der vollständige Vertrag samt der optionalen Ports steht in
 
 ## Einbindung
 
-Ein NuGet-Paket (`BimZen.Bcf.Core`) ist in Vorbereitung. Solange es nicht
-veröffentlicht ist, binden Sie das Projekt direkt ein:
+```
+dotnet add <ihr-projekt> package BimZen.Bcf.Core
+```
+
+Das Paket ist auf `netstandard2.0` ausgelegt und bringt keine
+Laufzeitabhängigkeiten mit. Wer an der Bibliothek selbst arbeitet oder sich an
+einen Commit statt an eine Version binden will, bindet das Projekt direkt ein:
 
 ```
 git clone https://github.com/kichnap/bimzen-bcf.git

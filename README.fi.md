@@ -2,6 +2,7 @@
 
 # bimzen-bcf
 
+[![NuGet](https://img.shields.io/nuget/v/BimZen.Bcf.Core.svg?color=blue)](https://www.nuget.org/packages/BimZen.Bcf.Core)
 [![Build](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml/badge.svg)](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Target](https://img.shields.io/badge/target-netstandard2.0-blue.svg)](Bcf.Core/Bcf.Core.csproj)
@@ -57,8 +58,13 @@ portti. Koko sopimus valinnaisine portteineen on tiedostossa
 
 ## Käyttöönotto
 
-NuGet-paketti (`BimZen.Bcf.Core`) on valmisteilla. Kunnes se on julkaistu,
-viittaa projektiin suoraan:
+```
+dotnet add <oma-projekti> package BimZen.Bcf.Core
+```
+
+Paketti on käännetty `netstandard2.0`-alustalle eikä tuo mukanaan yhtään
+ajonaikaista riippuvuutta. Jos haluat työskennellä itse kirjaston parissa tai
+sitoutua committiin version sijaan, viittaa projektiin suoraan:
 
 ```
 git clone https://github.com/kichnap/bimzen-bcf.git

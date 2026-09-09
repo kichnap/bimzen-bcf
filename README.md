@@ -2,6 +2,7 @@
 
 # bimzen-bcf
 
+[![NuGet](https://img.shields.io/nuget/v/BimZen.Bcf.Core.svg?color=blue)](https://www.nuget.org/packages/BimZen.Bcf.Core)
 [![Build](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml/badge.svg)](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Target](https://img.shields.io/badge/target-netstandard2.0-blue.svg)](Bcf.Core/Bcf.Core.csproj)
@@ -55,7 +56,12 @@ mandatory. The full contract, including the optional ports, is in
 
 ## Installation
 
-A NuGet package (`BimZen.Bcf.Core`) is being prepared. Until it is published,
+```
+dotnet add <your-project> package BimZen.Bcf.Core
+```
+
+The package targets `netstandard2.0` and carries no runtime dependencies. To
+work on the library itself, or to pin to a commit rather than to a version,
 reference the project directly:
 
 ```

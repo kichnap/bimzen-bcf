@@ -2,6 +2,7 @@
 
 # bimzen-bcf
 
+[![NuGet](https://img.shields.io/nuget/v/BimZen.Bcf.Core.svg?color=blue)](https://www.nuget.org/packages/BimZen.Bcf.Core)
 [![Build](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml/badge.svg)](https://github.com/kichnap/bimzen-bcf/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Target](https://img.shields.io/badge/target-netstandard2.0-blue.svg)](Bcf.Core/Bcf.Core.csproj)
@@ -56,8 +57,13 @@ using (var file = File.Create(@"C:\exports\clashes.bcfzip"))
 
 ## Подключение
 
-Пакет NuGet (`BimZen.Bcf.Core`) готовится. Пока он не опубликован,
-подключайте проект напрямую:
+```
+dotnet add <ваш-проект> package BimZen.Bcf.Core
+```
+
+Пакет собран под `netstandard2.0` и не тянет за собой ни одной зависимости
+времени выполнения. Чтобы работать над самой библиотекой или привязаться
+к коммиту, а не к версии, подключайте проект напрямую:
 
 ```
 git clone https://github.com/kichnap/bimzen-bcf.git
