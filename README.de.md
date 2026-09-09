@@ -57,8 +57,13 @@ zwingend ist. Der vollständige Vertrag samt der optionalen Ports steht in
 
 ## Einbindung
 
-Ein NuGet-Paket (`BimZen.Bcf.Core`) ist in Vorbereitung. Solange es nicht
-veröffentlicht ist, binden Sie das Projekt direkt ein:
+```
+dotnet add <ihr-projekt> package BimZen.Bcf.Core
+```
+
+Das Paket ist auf `netstandard2.0` ausgelegt und bringt keine
+Laufzeitabhängigkeiten mit. Wer an der Bibliothek selbst arbeitet oder sich an
+einen Commit statt an eine Version binden will, bindet das Projekt direkt ein:
 
 ```
 git clone https://github.com/kichnap/bimzen-bcf.git

@@ -57,8 +57,13 @@ portti. Koko sopimus valinnaisine portteineen on tiedostossa
 
 ## Käyttöönotto
 
-NuGet-paketti (`BimZen.Bcf.Core`) on valmisteilla. Kunnes se on julkaistu,
-viittaa projektiin suoraan:
+```
+dotnet add <oma-projekti> package BimZen.Bcf.Core
+```
+
+Paketti on käännetty `netstandard2.0`-alustalle eikä tuo mukanaan yhtään
+ajonaikaista riippuvuutta. Jos haluat työskennellä itse kirjaston parissa tai
+sitoutua committiin version sijaan, viittaa projektiin suoraan:
 
 ```
 git clone https://github.com/kichnap/bimzen-bcf.git

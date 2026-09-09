@@ -55,7 +55,12 @@ mandatory. The full contract, including the optional ports, is in
 
 ## Installation
 
-A NuGet package (`BimZen.Bcf.Core`) is being prepared. Until it is published,
+```
+dotnet add <your-project> package BimZen.Bcf.Core
+```
+
+The package targets `netstandard2.0` and carries no runtime dependencies. To
+work on the library itself, or to pin to a commit rather than to a version,
 reference the project directly:
 
 ```

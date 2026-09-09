@@ -56,8 +56,13 @@ using (var file = File.Create(@"C:\exports\clashes.bcfzip"))
 
 ## Подключение
 
-Пакет NuGet (`BimZen.Bcf.Core`) готовится. Пока он не опубликован,
-подключайте проект напрямую:
+```
+dotnet add <ваш-проект> package BimZen.Bcf.Core
+```
+
+Пакет собран под `netstandard2.0` и не тянет за собой ни одной зависимости
+времени выполнения. Чтобы работать над самой библиотекой или привязаться
+к коммиту, а не к версии, подключайте проект напрямую:
 
 ```
 git clone https://github.com/kichnap/bimzen-bcf.git

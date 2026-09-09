@@ -57,8 +57,14 @@ verplicht is. Het volledige contract, inclusief de optionele poorten, staat in
 
 ## Installatie
 
-Er wordt een NuGet-pakket (`BimZen.Bcf.Core`) voorbereid. Zolang dat niet
-gepubliceerd is, verwijs je rechtstreeks naar het project:
+```
+dotnet add <jouw-project> package BimZen.Bcf.Core
+```
+
+Het pakket is gebouwd voor `netstandard2.0` en brengt geen
+runtime-afhankelijkheden mee. Wil je aan de bibliotheek zelf werken, of je
+vastleggen op een commit in plaats van op een versie, verwijs dan rechtstreeks
+naar het project:
 
 ```
 git clone https://github.com/kichnap/bimzen-bcf.git

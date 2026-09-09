@@ -165,8 +165,9 @@ using (var destination = File.Create(path + ".tmp"))
 git clone https://github.com/kichnap/bimzen-bcf.git
 ```
 
-Дальше — ссылкой на проект `Bcf.Core/Bcf.Core.csproj`. Пакет NuGet
-(`BimZen.Bcf.Core`) готовится и станет рекомендуемым способом.
+Дальше — ссылкой на проект `Bcf.Core/Bcf.Core.csproj`. Так работают над самой
+библиотекой; чтобы ею пользоваться, берите пакет `BimZen.Bcf.Core` с nuget.org —
+это рекомендуемый способ, и зависимостей времени выполнения он не тянет.
 
 Тесты `Bcf.Core.Tests` собираются под `net48` и `net8.0` и требуют только
 xUnit — приложение моделирования для их запуска не нужно.
