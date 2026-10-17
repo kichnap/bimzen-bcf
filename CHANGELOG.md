@@ -14,6 +14,35 @@ update.
 
 Nothing yet.
 
+## [1.2.0] - 2026-10-18
+
+A minor number: the API only grows, but a consumer will see the difference.
+Archives read with this version carry colours they used to lose, and a saved
+view exported with it carries the sections it used to drop.
+
+### Added
+
+- Viewpoint colouring. `BcfViewpoint.Coloring` holds one `BcfColoring` per
+  colour — ARGB channels and the components painted in it — and both
+  serializers write it: in 3.0 the components of a colour sit inside
+  `Color/Components`, in 2.1 directly in `Color`. The reader looks in both
+  places, forgives the leading `#` some tools write, and reports a colour it
+  cannot parse instead of substituting one of its own. Until now colours were
+  lost on read, and a host that wanted them had to parse the `.bcfv` itself.
+- The source can state visibility. `ClashViewpointData.DefaultVisibility` and
+  `VisibilityExceptions` reach the viewpoint instead of the hard-coded
+  "everything visible". Left empty, they change nothing. `false` with no
+  exceptions on a clash viewpoint is isolation: the clash's own components
+  stay visible, so "Hide Others" no longer has to be faked with a snapshot.
+  A saved view can now carry its hidden elements.
+
+### Fixed
+
+- A saved view keeps its clipping planes. The source has always been able to
+  return them, and the clash viewpoints carried them, but the viewpoint of a
+  saved view dropped them: the receiving side opened the view on the outer
+  shell of the building, far from the place the author had cut through.
+
 ## [1.1.0] - 2026-09-09
 
 A minor number rather than a patch: nothing here breaks, but the export now
@@ -103,6 +132,7 @@ public release is not an empty page.
 - **Vocabularies** generated from a single JSON file, with tests that fail
   the build if the generated constants drift from it.
 
-[Unreleased]: https://github.com/kichnap/bimzen-bcf/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/kichnap/bimzen-bcf/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.2.0
 [1.1.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.1.0
 [1.0.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.0.0

@@ -496,6 +496,64 @@ namespace Bcf.Core.Serialization
             writer.WriteEndElement();
         }
 
+        /// <summary>
+        /// Writes the Coloring element, when the viewpoint has a colour with
+        /// components. Both schemas demand at least one component per colour,
+        /// so an empty colour is left out rather than spoiling the file.
+        ///
+        /// Пишет элемент Coloring, если у точки зрения есть цвет с элементами.
+        /// Обе схемы требуют хотя бы один элемент на цвет, поэтому пустой цвет
+        /// опускается, а не портит файл.
+        /// </summary>
+        /// <param name="writer">The writer of the entry.</param>
+        /// <param name="viewpoint">The viewpoint to take the colours from.</param>
+        /// <param name="wrapComponents">
+        /// True for 3.0, where a colour's components sit inside Components;
+        /// false for 2.1, where they sit directly in Color.
+        /// </param>
+        protected static void WriteColoring(XmlWriter writer, BcfViewpoint viewpoint, bool wrapComponents)
+        {
+            if (!HasColoring(viewpoint)) return;
+
+            writer.WriteStartElement("Coloring");
+
+            foreach (BcfColoring coloring in viewpoint.Coloring)
+            {
+                if (coloring == null || coloring.Components.Count == 0) continue;
+
+                writer.WriteStartElement("Color");
+                writer.WriteAttributeString("Color", coloring.ToHex());
+
+                if (wrapComponents) writer.WriteStartElement("Components");
+
+                foreach (BcfComponent component in coloring.Components)
+                {
+                    WriteComponent(writer, component);
+                }
+
+                if (wrapComponents) writer.WriteEndElement();
+
+                writer.WriteEndElement();
+            }
+
+            writer.WriteEndElement();
+        }
+
+        /// <summary>
+        /// Whether the viewpoint has a colour worth writing.
+        /// Есть ли у точки зрения цвет, который стоит записать.
+        /// </summary>
+        /// <param name="viewpoint">The viewpoint to look at.</param>
+        protected static bool HasColoring(BcfViewpoint viewpoint)
+        {
+            foreach (BcfColoring coloring in viewpoint.Coloring)
+            {
+                if (coloring != null && coloring.Components.Count > 0) return true;
+            }
+
+            return false;
+        }
+
         private static XmlWriter CreateXmlWriter(Stream stream)
         {
             var settings = new XmlWriterSettings

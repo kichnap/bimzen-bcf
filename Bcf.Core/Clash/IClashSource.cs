@@ -518,6 +518,38 @@ namespace Bcf.Core.Clash
         public IList<BcfClippingPlane> ClippingPlanes { get; } = new List<BcfClippingPlane>();
 
         /// <summary>
+        /// Whether the rest of the model is visible. Null means the host says
+        /// nothing, and the viewpoint shows everything — the behaviour before
+        /// the host could say otherwise. False is isolation: for a clash
+        /// viewpoint with no <see cref="VisibilityExceptions"/>, the clash's
+        /// own components become the exceptions, since an isolation that
+        /// leaves nothing visible is never what was meant.
+        ///
+        /// Видна ли остальная модель. Null — хост ничего не сообщает, и точка
+        /// зрения показывает всё: так было, пока хост не мог сказать иначе.
+        /// False — изоляция («Hide Others»): у точки зрения коллизии без
+        /// <see cref="VisibilityExceptions"/> исключениями становятся элементы
+        /// самой коллизии — изоляция, после которой не видно ничего, никогда
+        /// не бывает замыслом, а источнику не приходится второй раз переводить
+        /// те же элементы в идентификаторы.
+        /// </summary>
+        public bool? DefaultVisibility { get; set; }
+
+        /// <summary>
+        /// The components whose visibility differs from
+        /// <see cref="DefaultVisibility"/>: the hidden elements of a saved view
+        /// when everything else is visible, the visible ones under isolation.
+        /// A component with neither an IFC GUID nor an authoring-tool id
+        /// identifies nothing and is skipped.
+        ///
+        /// Элементы, чья видимость отличается от <see cref="DefaultVisibility"/>:
+        /// скрытые элементы сохранённого вида, когда остальное видно, или
+        /// видимые — при изоляции. Элемент без IFC GUID и без номера в исходной
+        /// системе ни на что не указывает и пропускается.
+        /// </summary>
+        public IList<BcfComponent> VisibilityExceptions { get; } = new List<BcfComponent>();
+
+        /// <summary>
         /// An explanation for the report when something did not work out.
         /// Пояснение для отчёта, если что-то не получилось.
         /// </summary>

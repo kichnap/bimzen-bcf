@@ -84,6 +84,109 @@ namespace Bcf.Core.Tests
             Assert.Equal(-1.0, plane.Direction.Z, 9);
         }
 
+        [Theory]
+        [InlineData(BcfVersion.Bcf30)]
+        [InlineData(BcfVersion.Bcf21)]
+        public void Coloring_SurvivesRoundTrip(BcfVersion version)
+        {
+            BcfReadResult result = Read(TestData.WriteArchive(version, TestData.Topic()));
+
+            BcfViewpoint viewpoint = result.Topics[0].Viewpoints[0];
+
+            Assert.Equal(2, viewpoint.Coloring.Count);
+
+            BcfColoring red = viewpoint.Coloring[0];
+            Assert.Equal("FF0000", red.ToHex());
+            Assert.Equal(255, red.Alpha);
+            Assert.Equal("2SugUv4EX5LAhcVpDp2dUH", Assert.Single(red.Components).IfcGuid);
+
+            BcfColoring blue = viewpoint.Coloring[1];
+            Assert.Equal("7F0080FF", blue.ToHex());
+            Assert.Equal(0x7F, blue.Alpha);
+            Assert.Equal(2, blue.Components.Count);
+            Assert.Equal("654321", blue.Components[1].AuthoringToolId);
+        }
+
+        [Fact]
+        public void Coloring_IsReadFromBothLayouts()
+        {
+            // 3.0 wraps the components of a colour in Components, 2.1 puts them
+            // straight into Color. A file half a step off its schema mixes the
+            // two, and the reader looks in both places either way
+            BcfReadResult result = Read(ArchiveWithColoring(@"
+    <Coloring>
+      <Color Color=""ff00ff"">
+        <Components><Component IfcGuid=""2SugUv4EX5LAhcVpDp2dUH"" /></Components>
+      </Color>
+      <Color Color=""#80FFFF00"">
+        <Component IfcGuid=""3woirKUVTF1wlWXy6aBfQJ"" />
+      </Color>
+    </Coloring>"));
+
+            BcfViewpoint viewpoint = result.Topics.Single().Viewpoints.Single();
+
+            Assert.Equal(2, viewpoint.Coloring.Count);
+            Assert.Equal("FF00FF", viewpoint.Coloring[0].ToHex());
+            Assert.Equal("2SugUv4EX5LAhcVpDp2dUH", viewpoint.Coloring[0].Components.Single().IfcGuid);
+
+            Assert.Equal(0x80, viewpoint.Coloring[1].Alpha);
+            Assert.Equal(0xFF, viewpoint.Coloring[1].Red);
+            Assert.Equal(0xFF, viewpoint.Coloring[1].Green);
+            Assert.Equal(0x00, viewpoint.Coloring[1].Blue);
+            Assert.Equal("3woirKUVTF1wlWXy6aBfQJ", viewpoint.Coloring[1].Components.Single().IfcGuid);
+        }
+
+        [Fact]
+        public void UnreadableColor_IsWarning_AndEmptyColorIsDropped()
+        {
+            BcfReadResult result = Read(ArchiveWithColoring(@"
+    <Coloring>
+      <Color Color=""crimson"">
+        <Components><Component IfcGuid=""2SugUv4EX5LAhcVpDp2dUH"" /></Components>
+      </Color>
+      <Color Color=""00FF00"" />
+      <Color Color=""0000FF"">
+        <Components><Component IfcGuid=""3woirKUVTF1wlWXy6aBfQJ"" /></Components>
+      </Color>
+    </Coloring>"));
+
+            BcfViewpoint viewpoint = result.Topics.Single().Viewpoints.Single();
+
+            Assert.Equal("0000FF", Assert.Single(viewpoint.Coloring).ToHex());
+            Assert.Contains(result.Warnings, w => w.Contains("crimson"));
+        }
+
+        [Theory]
+        [InlineData("FF0000", 255, 255, 0, 0)]
+        [InlineData("80FF0000", 128, 255, 0, 0)]
+        [InlineData("#00ff7f", 255, 0, 255, 127)]
+        [InlineData(" 0a0B0c ", 255, 10, 11, 12)]
+        public void ColorHex_IsParsedAsArgb(string value, int alpha, int red, int green, int blue)
+        {
+            BcfColoring coloring;
+
+            Assert.True(BcfColoring.TryParseHex(value, out coloring));
+            Assert.Equal(alpha, coloring.Alpha);
+            Assert.Equal(red, coloring.Red);
+            Assert.Equal(green, coloring.Green);
+            Assert.Equal(blue, coloring.Blue);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("FFF")]
+        [InlineData("FF00000")]
+        [InlineData("GG0000")]
+        [InlineData("+F0000")]
+        public void ColorHex_RejectsWhatIsNotAColor(string value)
+        {
+            BcfColoring coloring;
+
+            Assert.False(BcfColoring.TryParseHex(value, out coloring));
+            Assert.Null(coloring);
+        }
+
         [Fact]
         public void Project_IsReadBack()
         {
@@ -254,6 +357,38 @@ namespace Bcf.Core.Tests
             return BuildArchive(new[]
             {
                 Tuple.Create("3c9c2f6a-6666-4b2e-9a55-abcdefabcdef/markup.bcf", markup)
+            });
+        }
+
+        /// <summary>A topic with one viewpoint whose Components carry the given Coloring element.</summary>
+        private static byte[] ArchiveWithColoring(string coloring)
+        {
+            const string markup = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<Markup>
+  <Topic Guid=""3c9c2f6a-7777-4b2e-9a55-abcdefabcdef"" TopicType=""Clash"" TopicStatus=""New"">
+    <Title>Раскраска</Title>
+    <CreationDate>2026-08-18T10:30:00+03:00</CreationDate>
+    <CreationAuthor>coordinator@example.com</CreationAuthor>
+    <Viewpoints>
+      <ViewPoint Guid=""3c9c2f6a-8888-4b2e-9a55-abcdefabcdef"">
+        <Viewpoint>viewpoint.bcfv</Viewpoint>
+      </ViewPoint>
+    </Viewpoints>
+  </Topic>
+</Markup>";
+
+            string visualization = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<VisualizationInfo Guid=""3c9c2f6a-8888-4b2e-9a55-abcdefabcdef"">
+  <Components>
+    <Visibility DefaultVisibility=""true"" />" + coloring + @"
+  </Components>
+</VisualizationInfo>";
+
+            return BuildArchive(new[]
+            {
+                Tuple.Create("bcf.version", @"<?xml version=""1.0"" encoding=""utf-8""?><Version VersionId=""3.0"" />"),
+                Tuple.Create("3c9c2f6a-7777-4b2e-9a55-abcdefabcdef/markup.bcf", markup),
+                Tuple.Create("3c9c2f6a-7777-4b2e-9a55-abcdefabcdef/viewpoint.bcfv", visualization)
             });
         }
 

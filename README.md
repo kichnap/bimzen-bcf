@@ -24,6 +24,7 @@ against the official buildingSMART XSDs on every build.
 | Read | BCF 3.0, 2.1 and 2.0 (read-only). Lenient by design: unknown statuses and types from other tools are preserved, never rejected |
 | Update | Append to an existing archive without losing what a receiving tool put there |
 | Camera | Perspective and orthogonal, quaternion to direction and up vector, per-version limits |
+| Viewpoints | Selection, visibility, colouring and clipping planes, read and written in both versions; the host can hand over isolation and hidden elements |
 | Units | Any host unit to the metres BCF requires |
 | Identifiers | IFC GUID both ways, and Revit `UniqueId` to IFC GUID with the exporter's own algorithm |
 | Vocabularies | Types, statuses, priorities, labels and stages from one file, with generated constants |

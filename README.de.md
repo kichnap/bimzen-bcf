@@ -25,6 +25,7 @@ geprüft.
 | Lesen | BCF 3.0, 2.1 und 2.0 (nur lesend). Bewusst tolerant: unbekannte Status und Typen fremder Werkzeuge bleiben erhalten und werden nie verworfen |
 | Aktualisieren | An ein bestehendes Archiv anfügen, ohne zu verlieren, was ein Empfängerwerkzeug dort hinterlassen hat |
 | Kamera | Perspektivisch und orthogonal, Quaternion zu Richtung und Up-Vektor, versionsabhängige Grenzen |
+| Ansichtspunkte (Viewpoints) | Auswahl, Sichtbarkeit, Einfärbung und Schnittebenen, lesend und schreibend in beiden Versionen; der Host kann eine Isolierung und ausgeblendete Elemente übergeben |
 | Einheiten | Beliebige Host-Einheiten in die von BCF geforderten Meter |
 | Bezeichner | IFC-GUID in beide Richtungen und Revit-`UniqueId` zu IFC-GUID nach dem Algorithmus des Exporters |
 | Wertelisten | Typen, Status, Prioritäten, Labels und Phasen aus einer Datei, mit generierten Konstanten |

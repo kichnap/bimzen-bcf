@@ -345,7 +345,7 @@ namespace Bcf.Core.Serialization
                 {
                     try
                     {
-                        ReadVisualizationInfo(viewpoint, Load(viewpointEntry));
+                        ReadVisualizationInfo(viewpoint, Load(viewpointEntry), viewpointEntry.FullName, result);
                     }
                     catch (Exception ex)
                     {
@@ -361,7 +361,7 @@ namespace Bcf.Core.Serialization
             }
         }
 
-        private static void ReadVisualizationInfo(BcfViewpoint viewpoint, XDocument document)
+        private static void ReadVisualizationInfo(BcfViewpoint viewpoint, XDocument document, string entryName, BcfReadResult result)
         {
             XElement root = document.Root;
 
@@ -428,6 +428,8 @@ namespace Bcf.Core.Serialization
 
                     viewpoint.Visibility = model;
                 }
+
+                ReadColoring(viewpoint, components, entryName, result);
             }
 
             foreach (XElement plane in Collect(root, "ClippingPlanes", "ClippingPlane"))
@@ -474,6 +476,40 @@ namespace Bcf.Core.Serialization
             }
 
             if (viewpoint.Visibility == null) viewpoint.Visibility = visibility;
+        }
+
+        /// <summary>
+        /// Colouring: 3.0 wraps the components of a colour in Color/Components,
+        /// 2.1 puts them straight into Color, and both places are searched.
+        /// A colour that cannot be parsed is reported and skipped.
+        ///
+        /// Раскраска: в 3.0 элементы цвета завёрнуты в Color/Components,
+        /// в 2.1 лежат прямо в Color. Ищутся оба места — файлы бывают на
+        /// полшага не по своей схеме. Цвет, который не разобрать, отмечается
+        /// в отчёте и пропускается: подменять его своим значит показать
+        /// приёмнику не то, что задумал автор.
+        /// </summary>
+        private static void ReadColoring(BcfViewpoint viewpoint, XElement components, string entryName, BcfReadResult result)
+        {
+            foreach (XElement color in Collect(components, "Coloring", "Color"))
+            {
+                string value = (string)color.Attribute("Color");
+
+                BcfColoring coloring;
+                if (!BcfColoring.TryParseHex(value, out coloring))
+                {
+                    result.Warn("Цвет '" + value + "' в '" + entryName + "' не разобран, раскраска пропущена.");
+                    continue;
+                }
+
+                foreach (XElement component in Collect(color, "Components", "Component").Concat(color.Elements("Component")))
+                {
+                    coloring.Components.Add(ReadComponent(component));
+                }
+
+                // A colour with no components paints nothing
+                if (coloring.Components.Count > 0) viewpoint.Coloring.Add(coloring);
+            }
         }
 
         private static BcfComponent ReadComponent(XElement element)

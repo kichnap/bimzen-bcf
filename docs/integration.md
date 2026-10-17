@@ -53,12 +53,26 @@ method and a time budget, and returns a camera and, if asked, a PNG. If it
 cannot, return `null` or fill in `Warning`: one frame must not fail the whole
 export.
 
+Besides the camera, `ClashViewpointData` can carry what the scene looked
+like. `ClippingPlanes` are the sections the host applied. `DefaultVisibility`
+and `VisibilityExceptions` describe visibility: leave them empty and the
+viewpoint shows the whole model, as before. Set `DefaultVisibility = false`
+for isolation ("Hide Others"): when no exceptions are listed, the clash's own
+components stay visible, so the source does not have to resolve the same
+elements into identifiers twice.
+
 ### `ISavedViewpointSource` — optional
 
 Issues that clash logic cannot express: a device rotated the wrong way, a
 pipe crossing the middle of a room, an assembly built off-design. A person
 records those as a saved view, and this port turns them into topics of the
 same archive. Not supplied — only clashes are exported.
+
+It returns the same `ClashViewpointData`. A saved view keeps its sections,
+and its hidden elements go into `VisibilityExceptions` with the default left
+visible. Resolving hidden elements into identifiers may cost more than the
+rest of the export; whether to do it is the host's call, and without them
+the snapshot still shows what the author saw.
 
 ### `ITopicGuidStore` — optional
 

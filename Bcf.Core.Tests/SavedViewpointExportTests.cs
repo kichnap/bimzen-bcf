@@ -80,6 +80,59 @@ namespace Bcf.Core.Tests
         }
 
         [Fact]
+        public void ClippingPlanes_AreCarried()
+        {
+            // A sectioned view without its sections opens on the outer shell of
+            // the building — the place the author cut through is lost
+            var viewpoints = new FakeViewpointSource(View("v-1", "Разрез по оси 3"))
+            {
+                Shape = data => data.ClippingPlanes.Add(new BcfClippingPlane
+                {
+                    Location = new Vector3(0, 0, 3.5),
+                    Direction = new Vector3(0, 0, 1)
+                })
+            };
+
+            BcfViewpoint viewpoint = ReadBack(Settings(), viewpoints).Topics.Single().Viewpoints.Single();
+
+            BcfClippingPlane plane = Assert.Single(viewpoint.ClippingPlanes);
+            Assert.Equal(3.5, plane.Location.Z, 9);
+            Assert.Equal(1.0, plane.Direction.Z, 9);
+        }
+
+        [Fact]
+        public void HiddenElements_ReachTheViewpoint()
+        {
+            var viewpoints = new FakeViewpointSource(View("v-1", "Без подвесного потолка"))
+            {
+                Shape = data =>
+                {
+                    data.VisibilityExceptions.Add(new BcfComponent("1$1j4xEDn78A9oA4mCPCkL"));
+                    data.VisibilityExceptions.Add(new BcfComponent { AuthoringToolId = "777" });
+                }
+            };
+
+            BcfViewpoint viewpoint = ReadBack(Settings(), viewpoints).Topics.Single().Viewpoints.Single();
+
+            // No default given: the rest of the model is visible, the listed elements are not
+            Assert.True(viewpoint.Visibility.DefaultVisibility);
+            Assert.Equal(2, viewpoint.Visibility.Exceptions.Count);
+            Assert.Equal("1$1j4xEDn78A9oA4mCPCkL", viewpoint.Visibility.Exceptions[0].IfcGuid);
+            Assert.Equal("777", viewpoint.Visibility.Exceptions[1].AuthoringToolId);
+        }
+
+        [Fact]
+        public void SilentSource_LeavesEverythingVisible()
+        {
+            BcfViewpoint viewpoint = ReadBack(Settings(), new FakeViewpointSource(View("v-1", "Замечание")))
+                .Topics.Single().Viewpoints.Single();
+
+            Assert.True(viewpoint.Visibility.DefaultVisibility);
+            Assert.Empty(viewpoint.Visibility.Exceptions);
+            Assert.Empty(viewpoint.ClippingPlanes);
+        }
+
+        [Fact]
         public void TopicGuid_SurvivesRenameAndMove()
         {
             BcfExportSettings settings = Settings();
@@ -349,6 +402,9 @@ namespace Bcf.Core.Tests
             /// <summary>What the source says about the view it handed back.</summary>
             public string ViewpointWarning { get; set; }
 
+            /// <summary>Finishes the viewpoint the way a particular host would.</summary>
+            public Action<ClashViewpointData> Shape { get; set; }
+
             /// <summary>Whether the source was asked for the list of views at all.</summary>
             public bool WasAsked { get; private set; }
 
@@ -385,6 +441,8 @@ namespace Bcf.Core.Tests
                 };
 
                 if (snapshot.Enabled && !cameraless) data.Snapshot = TestData.FakePng();
+
+                Shape?.Invoke(data);
 
                 return data;
             }
