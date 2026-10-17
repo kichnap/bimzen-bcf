@@ -25,6 +25,7 @@ käännöksessä.
 | Luku | BCF 3.0, 2.1 ja 2.0 (vain luku). Tarkoituksella salliva: muiden työkalujen tuntemattomat tilat ja tyypit säilyvät eikä niitä koskaan hylätä |
 | Päivitys | Lisää olemassa olevaan arkistoon menettämättä sitä, mitä vastaanottava työkalu on sinne jättänyt |
 | Kamera | Perspektiivi ja ortogonaali, kvaternio suunnaksi ja ylösvektoriksi, versiokohtaiset rajat |
+| Näkymäpisteet | Valinta, näkyvyys, väritys ja leikkaustasot, luku ja kirjoitus molemmissa versioissa; isäntä voi välittää eristyksen ja piilotetut elementit |
 | Yksiköt | Mikä tahansa isännän yksikkö BCF:n vaatimiksi metreiksi |
 | Tunnisteet | IFC GUID molempiin suuntiin ja Revitin `UniqueId` IFC GUID:ksi viejän omalla algoritmilla |
 | Sanastot | Tyypit, tilat, prioriteetit, tunnisteet ja vaiheet yhdestä tiedostosta, vakiot generoiden |

@@ -11,6 +11,14 @@ Changelog](https://keepachangelog.com/ru/1.1.0/), версионирование
 
 ## [Не выпущено]
 
+Пока пусто.
+
+## [1.2.0] — 2026-10-18
+
+Минорный номер: API только растёт, но разницу потребитель увидит. Архивы,
+прочитанные этой версией, несут цвета, которые прежде терялись, а сохранённый
+вид, выгруженный ею, — сечения, которые прежде отбрасывались.
+
 ### Добавлено
 
 - Раскраска точек зрения. `BcfViewpoint.Coloring` хранит по `BcfColoring` на
@@ -123,6 +131,7 @@ MIT, без хоста, без зависимостей и с пакетом, к
 - **Справочники**, генерируемые из одного файла JSON, с тестами, которые
   роняют сборку при расхождении констант с ним.
 
-[Не выпущено]: https://github.com/kichnap/bimzen-bcf/compare/v1.1.0...HEAD
+[Не выпущено]: https://github.com/kichnap/bimzen-bcf/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.2.0
 [1.1.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.1.0
 [1.0.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.0.0

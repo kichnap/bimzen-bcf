@@ -12,6 +12,14 @@ update.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.2.0] - 2026-10-18
+
+A minor number: the API only grows, but a consumer will see the difference.
+Archives read with this version carry colours they used to lose, and a saved
+view exported with it carries the sections it used to drop.
+
 ### Added
 
 - Viewpoint colouring. `BcfViewpoint.Coloring` holds one `BcfColoring` per
@@ -124,6 +132,7 @@ public release is not an empty page.
 - **Vocabularies** generated from a single JSON file, with tests that fail
   the build if the generated constants drift from it.
 
-[Unreleased]: https://github.com/kichnap/bimzen-bcf/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/kichnap/bimzen-bcf/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.2.0
 [1.1.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.1.0
 [1.0.0]: https://github.com/kichnap/bimzen-bcf/releases/tag/v1.0.0
