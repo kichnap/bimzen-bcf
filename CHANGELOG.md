@@ -12,7 +12,28 @@ update.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Viewpoint colouring. `BcfViewpoint.Coloring` holds one `BcfColoring` per
+  colour — ARGB channels and the components painted in it — and both
+  serializers write it: in 3.0 the components of a colour sit inside
+  `Color/Components`, in 2.1 directly in `Color`. The reader looks in both
+  places, forgives the leading `#` some tools write, and reports a colour it
+  cannot parse instead of substituting one of its own. Until now colours were
+  lost on read, and a host that wanted them had to parse the `.bcfv` itself.
+- The source can state visibility. `ClashViewpointData.DefaultVisibility` and
+  `VisibilityExceptions` reach the viewpoint instead of the hard-coded
+  "everything visible". Left empty, they change nothing. `false` with no
+  exceptions on a clash viewpoint is isolation: the clash's own components
+  stay visible, so "Hide Others" no longer has to be faked with a snapshot.
+  A saved view can now carry its hidden elements.
+
+### Fixed
+
+- A saved view keeps its clipping planes. The source has always been able to
+  return them, and the clash viewpoints carried them, but the viewpoint of a
+  saved view dropped them: the receiving side opened the view on the outer
+  shell of the building, far from the place the author had cut through.
 
 ## [1.1.0] - 2026-09-09
 

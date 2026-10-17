@@ -627,19 +627,63 @@ namespace Bcf.Core.Clash
                 if (_snapshotBudget > 0) _snapshotBudget--;
             }
 
-            return new BcfViewpoint
+            var bcfViewpoint = new BcfViewpoint
             {
                 Guid = ViewpointGuidFor(topicGuid),
                 Camera = data.Camera,
                 Snapshot = data.Snapshot,
                 Index = 0,
 
-                // A saved view may hide part of the model, but that is not
-                // carried into the viewpoint: resolving the elements into IFC
-                // identifiers would cost more than the export itself. What the
-                // author saw is shown by the snapshot
-                Visibility = new BcfVisibility { DefaultVisibility = true }
+                // Hidden elements arrive only if the source resolved them into
+                // identifiers: that may cost more than the export itself, so it
+                // is the source's call. Without them, what the author saw is
+                // shown by the snapshot
+                Visibility = VisibilityOf(data, isolated: null)
             };
+
+            // Sections are part of what the author saved: without them the
+            // receiving side opens the view on the outer shell of the building
+            foreach (BcfClippingPlane plane in data.ClippingPlanes)
+            {
+                bcfViewpoint.ClippingPlanes.Add(plane);
+            }
+
+            return bcfViewpoint;
+        }
+
+        /// <summary>
+        /// The visibility the source asked for, or "everything visible" when
+        /// it asked for nothing. Under isolation with no exceptions given,
+        /// <paramref name="isolated"/> takes their place.
+        ///
+        /// Видимость, о которой попросил источник, или «видно всё», если он
+        /// ни о чём не просил. При изоляции без исключений их место занимает
+        /// <paramref name="isolated"/>.
+        /// </summary>
+        private static BcfVisibility VisibilityOf(ClashViewpointData data, IEnumerable<BcfComponent> isolated)
+        {
+            var visibility = new BcfVisibility { DefaultVisibility = data.DefaultVisibility ?? true };
+
+            foreach (BcfComponent component in data.VisibilityExceptions)
+            {
+                if (Identifies(component)) visibility.Exceptions.Add(component);
+            }
+
+            if (!visibility.DefaultVisibility && visibility.Exceptions.Count == 0 && isolated != null)
+            {
+                foreach (BcfComponent component in isolated)
+                {
+                    visibility.Exceptions.Add(component);
+                }
+            }
+
+            return visibility;
+        }
+
+        private static bool Identifies(BcfComponent component)
+        {
+            return component != null
+                && (!string.IsNullOrWhiteSpace(component.IfcGuid) || !string.IsNullOrWhiteSpace(component.AuthoringToolId));
         }
 
         private static SnapshotRequest WithoutSnapshot(SnapshotRequest snapshot)
@@ -1099,8 +1143,9 @@ namespace Bcf.Core.Clash
 
             // Visibility is given as explicit lists rather than as the
             // Navisworks translucent dimming: elsewhere that dimming is shown
-            // differently
-            viewpoint.Visibility = new BcfVisibility { DefaultVisibility = true };
+            // differently. Isolation with no exceptions keeps the clash itself
+            // visible
+            viewpoint.Visibility = VisibilityOf(data, viewpoint.Selection);
 
             return viewpoint;
         }

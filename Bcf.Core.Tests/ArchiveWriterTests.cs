@@ -44,6 +44,29 @@ namespace Bcf.Core.Tests
         [Theory]
         [InlineData(BcfVersion.Bcf30)]
         [InlineData(BcfVersion.Bcf21)]
+        public void ColoringOnly_IsValid_AndEmptyColorIsLeftOut(BcfVersion version)
+        {
+            // Nothing but colours: Components must still be written, 2.1 still
+            // gets its mandatory Visibility, and a colour with no components,
+            // which both schemas forbid, does not reach the file
+            BcfTopic topic = TestData.Topic();
+            BcfViewpoint viewpoint = topic.Viewpoints[0];
+            viewpoint.Selection.Clear();
+            viewpoint.Visibility = null;
+            viewpoint.Coloring.Add(new BcfColoring(0x00, 0xFF, 0x00));
+
+            byte[] archive = TestData.WriteArchive(version, topic);
+            string xml = TestData.EntryText(archive, BcfEntryNames.ViewpointEntry(topic.Guid, viewpoint.Guid));
+
+            Assert.Empty(TestData.Validate(xml, TestData.SchemaPath(version, "visinfo.xsd")));
+            Assert.Contains("Color=\"FF0000\"", xml);
+            Assert.Contains("Color=\"7F0080FF\"", xml);
+            Assert.DoesNotContain("00FF00", xml);
+        }
+
+        [Theory]
+        [InlineData(BcfVersion.Bcf30)]
+        [InlineData(BcfVersion.Bcf21)]
         public void ProjectAndVersionFiles_AreValid(BcfVersion version)
         {
             byte[] archive = TestData.WriteArchive(version, TestData.Topic());

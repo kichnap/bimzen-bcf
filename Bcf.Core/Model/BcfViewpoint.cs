@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Bcf.Core.Geometry;
 
 namespace Bcf.Core.Model
@@ -42,6 +43,15 @@ namespace Bcf.Core.Model
         /// иначе, и замысел не пережил бы дорогу.
         /// </summary>
         public BcfVisibility Visibility { get; set; }
+
+        /// <summary>
+        /// Components painted in a colour of their own, one entry per colour.
+        /// A colour with no components carries nothing and is not written.
+        ///
+        /// Элементы, окрашенные в свой цвет, — по записи на цвет. Цвет без
+        /// элементов ничего не несёт и не записывается.
+        /// </summary>
+        public IList<BcfColoring> Coloring { get; } = new List<BcfColoring>();
 
         /// <summary>
         /// The clipping planes of this viewpoint.
@@ -149,6 +159,117 @@ namespace Bcf.Core.Model
         /// кладёт их по-своему.
         /// </summary>
         public BcfViewSetupHints Hints { get; set; }
+    }
+
+    /// <summary>
+    /// One colour of a viewpoint and the components painted in it. The colour
+    /// is stored as ARGB: alpha first, as BCF writes it, and an opaque colour
+    /// goes out as six hex digits rather than eight.
+    ///
+    /// Один цвет точки зрения и элементы, окрашенные в него. Цвет хранится
+    /// как ARGB: альфа впереди, как пишет BCF, а непрозрачный цвет уходит
+    /// шестью шестнадцатеричными знаками, а не восемью — так его поймёт
+    /// и тот приёмник, что прозрачности не знает.
+    /// </summary>
+    public class BcfColoring
+    {
+        /// <summary>
+        /// Creates an opaque black colouring with no components.
+        /// Создаёт непрозрачную чёрную раскраску без элементов.
+        /// </summary>
+        public BcfColoring()
+        {
+        }
+
+        /// <summary>
+        /// Creates a colouring of the given colour.
+        /// Создаёт раскраску заданного цвета.
+        /// </summary>
+        /// <param name="red">The red channel. / Красный канал.</param>
+        /// <param name="green">The green channel. / Зелёный канал.</param>
+        /// <param name="blue">The blue channel. / Синий канал.</param>
+        /// <param name="alpha">The opacity, 255 for opaque. / Непрозрачность, 255 — непрозрачный.</param>
+        public BcfColoring(byte red, byte green, byte blue, byte alpha = 255)
+        {
+            Red = red;
+            Green = green;
+            Blue = blue;
+            Alpha = alpha;
+        }
+
+        /// <summary>
+        /// The opacity: 255 is opaque, 0 is fully transparent.
+        /// Непрозрачность: 255 — непрозрачный, 0 — полностью прозрачный.
+        /// </summary>
+        public byte Alpha { get; set; } = 255;
+
+        /// <summary>The red channel. / Красный канал.</summary>
+        public byte Red { get; set; }
+
+        /// <summary>The green channel. / Зелёный канал.</summary>
+        public byte Green { get; set; }
+
+        /// <summary>The blue channel. / Синий канал.</summary>
+        public byte Blue { get; set; }
+
+        /// <summary>
+        /// The components painted in this colour.
+        /// Элементы, окрашенные в этот цвет.
+        /// </summary>
+        public IList<BcfComponent> Components { get; } = new List<BcfComponent>();
+
+        /// <summary>
+        /// The colour as BCF writes it: RRGGBB when opaque, AARRGGBB otherwise,
+        /// upper-case — the 2.1 schema accepts nothing else.
+        ///
+        /// Цвет в том виде, в каком его пишет BCF: RRGGBB для непрозрачного,
+        /// AARRGGBB для остальных, заглавными буквами — схема 2.1 строчных
+        /// не принимает.
+        /// </summary>
+        public string ToHex()
+        {
+            string rgb = Red.ToString("X2", CultureInfo.InvariantCulture)
+                + Green.ToString("X2", CultureInfo.InvariantCulture)
+                + Blue.ToString("X2", CultureInfo.InvariantCulture);
+
+            return Alpha == 255 ? rgb : Alpha.ToString("X2", CultureInfo.InvariantCulture) + rgb;
+        }
+
+        /// <summary>
+        /// Parses a BCF colour: six hex digits (RGB) or eight (ARGB), either
+        /// case. A leading '#', which some tools write, is forgiven.
+        ///
+        /// Разбирает цвет BCF: шесть шестнадцатеричных знаков (RGB) или восемь
+        /// (ARGB), в любом регистре. Решётку в начале, которую пишут некоторые
+        /// программы, прощаем: замысел цвета понятен, а отбросить его значит
+        /// потерять раскраску целиком.
+        /// </summary>
+        /// <param name="value">The attribute value. / Значение атрибута.</param>
+        /// <param name="coloring">A colouring of that colour with no components. / Раскраска этого цвета без элементов.</param>
+        /// <returns>Whether the value is a colour. / Цвет ли это.</returns>
+        public static bool TryParseHex(string value, out BcfColoring coloring)
+        {
+            coloring = null;
+
+            if (string.IsNullOrWhiteSpace(value)) return false;
+
+            string hex = value.Trim().TrimStart('#');
+            uint parsed;
+
+            if ((hex.Length != 6 && hex.Length != 8)
+                || !uint.TryParse(hex, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out parsed))
+            {
+                return false;
+            }
+
+            coloring = new BcfColoring(
+                (byte)(parsed >> 16),
+                (byte)(parsed >> 8),
+                (byte)parsed,
+                hex.Length == 8 ? (byte)(parsed >> 24) : (byte)255);
+
+            return true;
+        }
     }
 
     /// <summary>

@@ -341,6 +341,79 @@ namespace Bcf.Core.Tests
         }
 
         [Fact]
+        public void SilentSource_LeavesEverythingVisible()
+        {
+            BcfViewpoint viewpoint = SingleTopic(new FakeClashSource(Clash("Этаж 3", "New")), Settings()).Viewpoints.Single();
+
+            Assert.True(viewpoint.Visibility.DefaultVisibility);
+            Assert.Empty(viewpoint.Visibility.Exceptions);
+        }
+
+        [Fact]
+        public void Isolation_WithoutExceptions_KeepsTheClashVisible()
+        {
+            // "Hide Others" with nothing listed: the clash itself stays visible,
+            // otherwise the receiving side opens an empty scene
+            var source = new FakeClashSource(Clash("Этаж 3", "New"))
+            {
+                Shape = data => data.DefaultVisibility = false
+            };
+
+            BcfViewpoint viewpoint = SingleTopic(source, Settings()).Viewpoints.Single();
+
+            Assert.False(viewpoint.Visibility.DefaultVisibility);
+            Assert.Equal(
+                new[] { "2SugUv4EX5LAhcVpDp2dUH", "3woirKUVTF1wlWXy6aBfQJ" },
+                viewpoint.Visibility.Exceptions.Select(c => c.IfcGuid).OrderBy(g => g, StringComparer.Ordinal));
+        }
+
+        [Fact]
+        public void Isolation_WithExceptions_WritesThemAsGiven()
+        {
+            var source = new FakeClashSource(Clash("Этаж 3", "New"))
+            {
+                Shape = data =>
+                {
+                    data.DefaultVisibility = false;
+                    data.VisibilityExceptions.Add(new BcfComponent("1$1j4xEDn78A9oA4mCPCkL"));
+                    data.VisibilityExceptions.Add(new BcfComponent { OriginatingSystem = "Navisworks" });
+                }
+            };
+
+            BcfViewpoint viewpoint = SingleTopic(source, Settings()).Viewpoints.Single();
+
+            Assert.False(viewpoint.Visibility.DefaultVisibility);
+            // The component with no identifier points at nothing and is dropped
+            Assert.Equal("1$1j4xEDn78A9oA4mCPCkL", viewpoint.Visibility.Exceptions.Single().IfcGuid);
+        }
+
+        [Theory]
+        [InlineData(BcfVersion.Bcf30)]
+        [InlineData(BcfVersion.Bcf21)]
+        public void Isolation_IsValidAgainstOfficialSchema(BcfVersion version)
+        {
+            var source = new FakeClashSource(Clash("Этаж 3", "New"))
+            {
+                Shape = data => data.DefaultVisibility = false
+            };
+
+            BcfExportSettings settings = Settings();
+            settings.Version = version;
+
+            using (var buffer = new MemoryStream())
+            {
+                Assert.True(new BcfClashExporter(source).Export(buffer, settings).Succeeded);
+
+                byte[] archive = buffer.ToArray();
+                string entry = TestData.EntryNames(archive).Single(n => n.EndsWith(".bcfv", StringComparison.Ordinal));
+                string xml = TestData.EntryText(archive, entry);
+
+                Assert.Contains("DefaultVisibility=\"false\"", xml);
+                Assert.Empty(TestData.Validate(xml, TestData.SchemaPath(version, "visinfo.xsd")));
+            }
+        }
+
+        [Fact]
         public void EmptySnapshots_AreCountedSeparately()
         {
             // "51 captured" with 51 empty frames is not a report but misinformation:
@@ -646,6 +719,9 @@ namespace Bcf.Core.Tests
             /// <summary>What the source says about the viewpoint it handed back.</summary>
             public string ViewpointWarning { get; set; }
 
+            /// <summary>Finishes the viewpoint the way a particular host would.</summary>
+            public Action<ClashViewpointData> Shape { get; set; }
+
             public ClashDocumentInfo GetDocument()
             {
                 var document = new ClashDocumentInfo
@@ -697,6 +773,8 @@ namespace Bcf.Core.Tests
                     SnapshotIsEmpty = snapshot.Enabled && !Cameraless && ReportEmptySnapshots,
                     Warning = ViewpointWarning
                 };
+
+                Shape?.Invoke(data);
 
                 return data;
             }

@@ -234,8 +234,9 @@ namespace Bcf.Core.Serialization
         {
             bool hasSelection = viewpoint.Selection.Count > 0;
             bool hasVisibility = viewpoint.Visibility != null;
+            bool hasColoring = HasColoring(viewpoint);
 
-            if (!hasSelection && !hasVisibility) return;
+            if (!hasSelection && !hasVisibility && !hasColoring) return;
 
             writer.WriteStartElement("Components");
 
@@ -274,6 +275,8 @@ namespace Bcf.Core.Serialization
 
                 writer.WriteEndElement();
             }
+
+            WriteColoring(writer, viewpoint, wrapComponents: true);
 
             writer.WriteEndElement();
         }

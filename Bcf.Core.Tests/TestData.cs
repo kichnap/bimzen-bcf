@@ -112,6 +112,15 @@ namespace Bcf.Core.Tests
             visibility.Exceptions.Add(new BcfComponent("1$1j4xEDn78A9oA4mCPCkL"));
             viewpoint.Visibility = visibility;
 
+            var red = new BcfColoring(0xFF, 0x00, 0x00);
+            red.Components.Add(new BcfComponent("2SugUv4EX5LAhcVpDp2dUH"));
+            viewpoint.Coloring.Add(red);
+
+            var translucentBlue = new BcfColoring(0x00, 0x80, 0xFF, 0x7F);
+            translucentBlue.Components.Add(new BcfComponent("3woirKUVTF1wlWXy6aBfQJ"));
+            translucentBlue.Components.Add(new BcfComponent { AuthoringToolId = "654321" });
+            viewpoint.Coloring.Add(translucentBlue);
+
             viewpoint.ClippingPlanes.Add(new BcfClippingPlane
             {
                 Location = new Vector3(0, 0, 3.5),
