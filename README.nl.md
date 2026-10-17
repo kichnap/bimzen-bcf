@@ -25,7 +25,7 @@ buildingSMART.
 | Lezen | BCF 3.0, 2.1 en 2.0 (alleen lezen). Bewust tolerant: onbekende statussen en typen uit andere gereedschappen blijven behouden en worden nooit geweigerd |
 | Bijwerken | Toevoegen aan een bestaand archief zonder te verliezen wat een ontvangend gereedschap erin heeft gezet |
 | Camera | Perspectief en orthogonaal, quaternion naar richting en up-vector, grenzen per versie |
-| Gezichtspunten | Selectie, zichtbaarheid, inkleuring en doorsnedevlakken, lezen en schrijven in beide versies; de host kan isolatie en verborgen elementen doorgeven |
+| Viewpoints | Selectie, zichtbaarheid, inkleuring en doorsnedevlakken, lezen en schrijven in beide versies; de host kan isolatie en verborgen elementen doorgeven |
 | Eenheden | Elke eenheid van de host naar de meters die BCF vereist |
 | Identificatoren | IFC-GUID in beide richtingen en Revit-`UniqueId` naar IFC-GUID volgens het algoritme van de exporteur |
 | Waardelijsten | Typen, statussen, prioriteiten, labels en fasen uit één bestand, met gegenereerde constanten |

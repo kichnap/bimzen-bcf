@@ -479,6 +479,10 @@ namespace Bcf.Core.Serialization
         }
 
         /// <summary>
+        /// Colouring: 3.0 wraps the components of a colour in Color/Components,
+        /// 2.1 puts them straight into Color, and both places are searched.
+        /// A colour that cannot be parsed is reported and skipped.
+        ///
         /// Раскраска: в 3.0 элементы цвета завёрнуты в Color/Components,
         /// в 2.1 лежат прямо в Color. Ищутся оба места — файлы бывают на
         /// полшага не по своей схеме. Цвет, который не разобрать, отмечается
